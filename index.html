@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<!-- Tambahan reCAPTCHA v2 Google -->
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>infounjku — Info Kepanitiaan & Open Recruitment Kampus</title>
+<meta name="description" content="Pusat informasi agenda acara & lowongan kepanitiaan mahasiswa UNJ. Satu pintu, tanpa scroll panjang.">
+
+<meta name="theme-color" content="#171512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="infounjku">
+<link rel="manifest" href="manifest.json">
+
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="infounjku">
+<meta property="og:title" content="infounjku — Semua lowongan kepanitiaan UNJ di satu tempat">
+<meta property="og:description" content="Gak perlu scroll IG panjang-panjang. Semua open recruitment & event kampus udah dikumpulin + countdown deadline live.">
+<meta property="og:url" content="https://infounjku.id">
+<meta property="og:image" content="https://infounjku.id/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="id_ID">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="infounjku — Mading digital mahasiswa UNJ">
+<meta name="twitter:description" content="Satu pintu semua info kegiatan & lowongan kepanitiaan kampus. Live countdown, auto-sync IG.">
+<meta name="twitter:image" content="https://infounjku.id/og-cover.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader__box">
+    <span class="loader__star">✳</span>
+    <div class="loader__word" aria-label="infounjku">
+      <span class="l">i</span><span class="l">n</span><span class="l">f</span><span class="l">o</span><span class="l">u</span><span class="l">n</span><span class="l">j</span><span class="l k">k</span><span class="l k">u</span>
+    </div>
+    <div class="loader__bar"><i></i></div>
+    <p class="loader__tag mono">nyiapin info paling daging...</p>
+  </div>
+</div>
+
+<div class="ticker" aria-hidden="true"><div class="ticker__track" id="tickerTrack"></div></div>
+
+<header>
+  <nav class="nav">
+    <a href="#" class="logo">
+      <span class="star">✳</span>
+      <span class="logo__word">INFOUNJ<em>KU</em></span>
+      <span class="mode-chip">2026</span>
+    </a>
+    <ul class="nav__links" id="navLinks">
+      <li><a href="#lowongan">Lowongan</a></li>
+      <li><a href="#agenda">Agenda</a></li>
+      <li><a href="#igfeed">IG Feed</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+    <button class="burger" id="burger" aria-label="Menu">☰</button>
+  </nav>
+</header>
+
+<section class="hero dotbg">
+  <div class="wrap">
+    <div>
+      <span class="kicker reveal"><span class="pulse"></span> INFO AGENDA & REKRUTMEN KAMPUS UNJ</span>
+      <h1 class="reveal" style="transition-delay:.08s">
+        Gak usah scroll<br>panjang, bro.<span class="h1-star">✦</span><br>
+        <span class="flip-line"><span class="flip" id="flipWord">LOWONGAN PANITIA</span></span>
+        <span>ADA DI SINI.</span>
+      </h1>
+      <p class="lead reveal" style="transition-delay:.16s">Semua <b>agenda dan open recruitment kepanitiaan</b> kampus UNJ dikumpulin di satu tempat. Kami rangkum otomatis dari Instagram, kamu tinggal <b>pilih & daftar</b>. Gak ada lagi info kelewat.</p>
+      <div class="hero__actions reveal" style="transition-delay:.24s">
+        <a href="#lowongan" class="btn">Cari Lowongan ↓</a>
+        <a href="#igfeed" class="btn btn--ghost">Lihat IG Feed</a>
+      </div>
+      <div class="hero__stats reveal" style="transition-delay:.32s">
+        <span><b id="statJobs">0</b><i>lowongan aktif</i></span>
+        <span><b id="statEvents">0</b><i>agenda aktif</i></span>
+        <span><b id="statViews">0</b><i>pengunjung</i></span>
+      </div>
+      <div class="org-marquee reveal" style="transition-delay:.4s">
+        <span class="org-marquee__label mono">DIPERCAYA 41 ORGANISASI KAMPUS ✦</span>
+        <div class="org-marquee__wrap"><div class="org-marquee__track" id="orgTrack"></div></div>
+      </div>
+    </div>
+    <div class="hero__visual reveal" style="transition-delay:.2s">
+      <span class="mega-star">✳</span>
+      <article class="pinned pinned--main">
+        <span class="tape"></span>
+        <span class="urgent-tag">⏳ MEMUAT DATA...</span>
+        <h3>Menyiapkan lowongan terbaru</h3>
+        <p class="org">infounjku • sinkron otomatis</p>
+        <div class="big-cd" id="heroCd">--:--:--:--</div>
+        <span class="cd-label">HARI : JAM : MENIT : DETIK</span>
+        <div class="bar"><i style="width:0%"></i></div>
+        <div class="meta"><span>-/- pendaftar</span><span>via @infounjku</span></div>
+        <div class="pinned__actions"><button class="btn js-apply" disabled>Gas Daftar →</button></div>
+      </article>
+      <div class="pinned pinned--mini a" id="miniA">🔔 0 lowongan tutup minggu ini</div>
+      <div class="pinned pinned--mini b" id="miniB">✨ 0 lowongan baru</div>
+      <div class="sticker">DIBUKA!</div>
+    </div>
+  </div>
+</section>
+
+<section id="lowongan">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="mono-kick">✦ 01 — OPEN RECRUITMENT</span>
+      <h2>Lowongan Kepanitiaan <span class="mark">Terbaru</span></h2>
+      <p>Dikurasi otomatis dari post Instagram organisasi kampus. Countdown jalan terus — jangan sampai kelewat deadline, bro.</p>
+    </div>
+    <div class="searchbar reveal" id="searchBar">
+      <label class="searchbox">
+        <span class="searchbox__icon">🔎</span>
+        <input type="text" id="searchBox" placeholder="cari: divisi acara, panitia PENS, hima..." autocomplete="off">
+        <button class="searchbox__clear" id="searchClear" type="button" aria-label="Bersihkan pencarian" hidden>✕</button>
+      </label>
+      <div class="filterbox" id="filterBox">
+        <button class="filterbox__btn" id="filterToggle" type="button" aria-expanded="false" aria-controls="filterPanel">
+          🎛 <span class="filterbox__txt">Filter</span>
+          <span class="filterbox__badge" id="filterBadge" hidden>0</span>
+          <span class="filterbox__caret">▾</span>
+        </button>
+        <div class="filterpanel" id="filterPanel">
+          <div class="filterpanel__head">
+            <span class="mono">FILTER & URUTKAN</span>
+            <button type="button" class="filterpanel__reset" id="filterReset">↺ RESET</button>
+          </div>
+          <div class="filterpanel__group">
+            <span class="filterpanel__label mono">KATEGORI</span>
+            <div class="filterpanel__chips" id="chipsRow">
+              <button class="chip active" data-filter="all">✦ Semua</button>
+              <button class="chip" data-filter="bem">BEM</button>
+              <button class="chip" data-filter="hima">HIMA</button>
+              <button class="chip" data-filter="ukm">UKM</button>
+              <button class="chip" data-filter="event">Event</button>
+              <button class="chip" data-filter="riset">Riset</button>
+              <button class="chip" data-filter="umum">Umum</button>
+            </div>
+          </div>
+          <div class="filterpanel__group">
+            <span class="filterpanel__label mono">DEADLINE</span>
+            <div class="filterpanel__chips" id="deadlineRow">
+              <button class="chip active" data-deadline="any">Kapan Saja</button>
+              <button class="chip" data-deadline="3d">&lt; 3 Hari</button>
+              <button class="chip" data-deadline="week">Minggu Ini</button>
+              <button class="chip" data-deadline="month">Bulan Ini</button>
+            </div>
+          </div>
+          <div class="filterpanel__group">
+            <span class="filterpanel__label mono">URUTKAN</span>
+            <div class="filterpanel__chips" id="sortRow">
+              <button class="chip active" data-sort="newest">Terbaru</button>
+              <button class="chip" data-sort="deadline">Deadline Terdekat</button>
+              <button class="chip" data-sort="popular">Terpopuler</button>
+              <button class="chip" data-sort="quota">Kuota Hampir Penuh</button>
+            </div>
+          </div>
+          <div class="filterpanel__foot">
+            <span class="mono" id="filterCount">0 lowongan cocok</span>
+            <button type="button" class="btn btn--sm" id="filterDone">Selesai ✓</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="count-line" id="countLine"></p>
+    <div class="jobs" id="loadingGrid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-icon">🔍</div>
+      <h3>Belum Ada Lowongan Aktif</h3>
+      <p>Saat ini belum ada open recruitment yang dibuka. Pantau terus IG <b>@infounjku</b> buat update terbarunya!</p>
+    </div>
+    <div class="jobs" id="jobsGrid" style="display:none;"></div>
+    <div class="limitbox reveal" id="limitBox">
+      <span class="mono">TAMPILKAN:</span>
+      <select id="limitSelect" aria-label="Jumlah lowongan yang ditampilkan">
+        <option value="6" selected>6 lowongan</option>
+        <option value="12">12 lowongan</option>
+        <option value="24">24 lowongan</option>
+        <option value="all">Semua</option>
+      </select>
+      <span class="mono" id="limitInfo"></span>
+    </div>
+  </div>
+</section>
+
+<section class="agenda" id="agenda">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="mono-kick">✦ 02 — AGENDA KAMPUS</span>
+      <h2 style="color:#fff">Jangan Sampai <span style="background:var(--yellow);color:var(--ink);padding:0 .12em">Kelewatan</span></h2>
+      <p>Rangkaian acara kampus dari berbagai organisasi. Catat tanggalnya, jangan sampai kelewatan!</p>
+    </div>
+    <div class="agenda-list" id="agendaList">
+      <div class="skeleton-card agenda-skeleton"></div>
+      <div class="skeleton-card agenda-skeleton"></div>
+      <div class="skeleton-card agenda-skeleton"></div>
+    </div>
+    <div class="limitbox reveal" id="agendaLimitBox">
+      <span class="mono">TAMPILKAN:</span>
+      <select id="agendaLimitSelect" aria-label="Jumlah agenda yang ditampilkan">
+        <option value="6" selected>6 agenda</option>
+        <option value="12">12 agenda</option>
+        <option value="24">24 agenda</option>
+        <option value="all">Semua</option>
+      </select>
+      <span class="mono" id="agendaLimitInfo"></span>
+    </div>
+  </div>
+</section>
+
+<section id="igfeed">
+  <div class="wrap">
+    <div class="sec-head ig-head-row reveal">
+      <div>
+        <span class="mono-kick">✦ 03 — IG FEED</span>
+        <h2>Langsung dari <span class="mark">@infounjku</span></h2>
+        <p>Post terbaru dari akun Instagram @infounjku.</p>
+        <span class="auto-note">AUTO-SYNC TERAKHIR: <span id="syncTime">memuat...</span></span>
+      </div>
+      <div class="ig-nav">
+        <button id="igPrev" aria-label="Sebelumnya">←</button>
+        <button id="igNext" aria-label="Berikutnya">→</button>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="ig-rail" id="igRail">
+      <div class="skeleton-card ig-skeleton"></div>
+      <div class="skeleton-card ig-skeleton"></div>
+      <div class="skeleton-card ig-skeleton"></div>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="mono-kick" style="color:var(--lime)">✦ 04 — ABOUT</span>
+      <h2 style="color:var(--paper)">Di Balik <span style="color:var(--lime)">infounjku.</span></h2>
+    </div>
+    <p class="about-text reveal">infounjku lahir dari rasa kesel liat info open recruitment berserakan di story IG, grup WA, dan mading fisik yang udah basah kehujanan. Jadi kami bikin satu pintu: organisasi cukup post di Instagram, sistem yang ngerjain sisanya.</p>
+    <div class="team-grid">
+      <article class="team-card reveal">
+        <img class="team-photo" src="/img/charles.jpg" alt="Foto Alghiff">
+        <div class="team-body">
+          <div class="team-head"><h3>Alghiff</h3><span class="stamp stamp--open">FOUNDER</span></div>
+          <p class="team-role">FULL-STACK DEVELOPER</p>
+          <p class="team-desc">Nanggung semua kode dari frontend sampe database.</p>
+          <a href="#" class="team-ig">@alghiff</a>
+        </div>
+      </article>
+      <article class="team-card reveal" style="transition-delay:.08s">
+        <img class="team-photo" src="/img/ada.jpg" alt="Foto Kiyaa">
+        <div class="team-body">
+          <div class="team-head"><h3>Kiyaa</h3><span class="stamp stamp--open">CO-FOUNDER</span></div>
+          <p class="team-role">UI/UX DESIGNER</p>
+          <p class="team-desc">Dalang di balik tampilan web ini.</p>
+          <a href="#" class="team-ig">@kiyaa</a>
+        </div>
+      </article>
+      <article class="team-card reveal" style="transition-delay:.16s">
+        <img class="team-photo" src="/img/grace.jpg" alt="Foto Ifatt">
+        <div class="team-body">
+          <div class="team-head"><h3>Ifatt</h3><span class="stamp stamp--open">CO-FOUNDER</span></div>
+          <p class="team-role">AUTOMATION ENGINEER</p>
+          <p class="team-desc">Yang bikin robot n8n kerja 24/7.</p>
+          <a href="#" class="team-ig">@ifatt</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="notify" id="collab">
+  <div class="wrap">
+    <div class="reveal">
+      <h2>Ayo Collab<br>Sama Kita 🤝</h2>
+      <p>Organisasi, UKM, atau panitia event lu mau info open recruitment-nya tayang di infounjku & IG kami? Isi form ini — tim kami balas maksimal 2×24 jam.</p>
+    </div>
+    <form class="notify-form reveal" id="collabForm" style="transition-delay:.1s">
+      <div id="formFields">
+        <label>NAMA ORGANISASI / KOMUNITAS</label>
+        <input type="text" id="collabOrg" required placeholder="contoh Panitia PENS 2026">
+        <label>KONTAK (EMAIL / WHATSAPP)</label>
+        <input type="text" id="collabContact" required placeholder="humas@pens.unjku.ac.id / 08xx">
+        <label>JENIS KOLABORASI</label>
+        <select id="collabType">
+          <option>Publikasi Lowongan / Open Recruitment</option>
+          <option>Media Partner</option>
+          <option>Sponsorship</option>
+          <option>Cross-Event</option>
+          <option>Lainnya</option>
+        </select>
+        <label>PESAN / BRIEF SINGKAT</label>
+        <textarea id="collabMsg" rows="4" required placeholder="Ceritain rencana kolaborasi lu..."></textarea>
+        <!-- Widget reCAPTCHA (Ganti tulisan SITE_KEY_LU pakai key dari Google) -->
+        <div class="g-recaptcha" data-sitekey="6Le-5fAtAAAAAKBOPtObVjdMSuzSZUOuxfrjt7_7" style="margin-bottom: 16px; transform: scale(0.9); transform-origin: left;"></div>
+
+        <!-- Tombol Install App (PWA) - Default hidden, muncul otomatis kalau user belum install -->
+        <button type="button" id="installAppBtn" class="btn" style="display:none; width:100%; justify-content:center; margin-bottom: 16px; background: var(--blue); color: #fff;">
+          📱 Install Aplikasi infounjku
+        </button>
+        <button type="submit" class="btn">Kirim Proposal 📨</button>
+      </div>
+      <div class="form-ok" id="formOk">
+        <div class="big">🤝</div>
+        <h4>Proposal terkirim!</h4>
+        <p class="mono" style="font-size:12px;margin-top:8px;color:var(--ink-soft)">Tim kami bakal hubungi lu maksimal 2×24 jam.</p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-word reveal">INFOUNJKU ✳</div>
+    <div class="foot-grid">
+      <div>
+        <h5>✦ TENTANG</h5>
+        <p class="foot-desc">Pusat informasi agenda acara & lowongan kepanitiaan mahasiswa UNJ. Dibuat mahasiswa, buat mahasiswa.</p>
+        <div class="foot-social">
+          <a href="#" aria-label="Instagram">IG</a>
+          <a href="#" aria-label="TikTok">TT</a>
+          <a href="#" aria-label="Telegram">TG</a>
+          <a href="mailto:halo@infounjku.id" aria-label="Email">@</a>
+        </div>
+      </div>
+      <div>
+        <h5>✦ KONTAK</h5>
+        <ul>
+          <li><a href="mailto:halo@infounjku.id">halo@infounjku.id</a></li>
+          <li><a href="#">WA: 08xx-xxxx-xxxx</a></li>
+          <li><span class="foot-plain">📍 Jl. Rawamangun Muka Raya No. 11, RT.11/RW.14, Rawamangun, Kecamatan Pulo Gadung, Kota Jakarta Timur, DKI Jakarta 13220</span></li>
+          <li><a href="admin.html">🔐 Admin Panel</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="year">2026</span> INFOUNJKU — dibuat mahasiswa, buat mahasiswa</span>
+      <span class="foot-right"><a href="#" class="foot-top" id="footTop">↑ Balik ke atas</a></span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+<script src="js/script.js"></script>
+</body>
+</html>

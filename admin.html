@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — infounjku</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  #tab-lowongan,#tab-events,#tab-analytics{padding:0!important}
+  .admin-main{padding-top:26px}
+  .admin-note{margin-bottom:16px;border:2px dashed var(--ink);background:var(--lime);padding:12px 16px;font-size:.82rem;font-weight:600}
+  .admin-tabs{margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap}
+  .admin-tabs .chip{border:2.5px solid var(--ink);background:var(--card);padding:10px 20px;border-radius:999px;font-weight:800;box-shadow:3px 3px 0 var(--ink)}
+  .admin-tabs .chip.active{background:var(--blue);color:#fff}
+  /* LOGO ADMIN: KU NYAMBUNG + TETEP MIRING */
+  .logo__word em{font-style:italic}
+  /* LOGIN */
+  .admin-login{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99}
+  .admin-login__box{background:var(--card);border:2.5px solid var(--ink);box-shadow:8px 8px 0 var(--lime);padding:34px 30px;width:100%;max-width:420px}
+  .admin-login__box h1{font-family:var(--display);font-weight:800;font-size:1.8rem;margin:6px 0 18px;text-transform:uppercase}
+  .admin-login__box label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;font-weight:700;display:block;margin-bottom:6px}
+  .admin-login__box input{width:100%;border:2px solid var(--ink);padding:12px 14px;font-family:var(--mono);font-size:.9rem;outline:none;background:var(--paper);margin-bottom:16px}
+  .admin-login__box input:focus{box-shadow:3px 3px 0 var(--blue)}
+  .admin-login__box .btn{width:100%;justify-content:center}
+  .admin-login__box .hint{font-size:10px;color:var(--ink-soft);margin-top:12px}
+  /* PASSWRAP RAPI: MATA CENTER SEMPURNA */
+  .passwrap{position:relative;margin-bottom:16px}
+  .passwrap input{margin-bottom:0;padding-right:46px}
+  .passeye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.15rem;line-height:1;cursor:pointer;padding:4px}
+  .passeye:hover{transform:translateY(-50%) scale(1.15)}
+  /* TOP BAR */
+  .admin-top{position:sticky;top:0;z-index:50;background:var(--yellow);border-bottom:2.5px solid var(--ink);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .admin-main{padding:34px 28px 80px;max-width:1080px;margin:0 auto}
+  .admin-card{background:var(--card);border:2.5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:24px 22px;margin-bottom:26px}
+  .admin-card h3{font-family:var(--display);font-size:1.25rem;margin-bottom:16px;text-transform:uppercase}
+  .admin-form label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;font-weight:700;margin-bottom:10px;color:var(--ink-soft)}
+  .admin-form input,.admin-form select{display:block;width:100%;border:2px solid var(--ink);background:var(--paper);padding:10px 12px;font-family:var(--body);font-size:.9rem;outline:none;margin-top:4px}
+  .admin-form input:focus,.admin-form select:focus{box-shadow:3px 3px 0 var(--blue);background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px}
+  .admin-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .admin-tablewrap{overflow-x:auto;border:2.5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);background:var(--card)}
+  .admin-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:720px}
+  .admin-table th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-align:left;background:var(--ink);color:var(--lime);padding:12px 14px}
+  .admin-table td{padding:12px 14px;border-top:1.5px dashed rgba(23,21,18,.3);vertical-align:top}
+  .admin-table tr:hover td{background:var(--paper)}
+  .admin-table .act{display:flex;gap:6px}
+  .admin-table .act button{border:2px solid var(--ink);background:var(--paper);padding:6px 10px;font-size:.75rem;font-weight:700;box-shadow:2px 2px 0 var(--ink);transition:.15s}
+  .admin-table .act button:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+  .admin-table .act .del:hover{background:var(--red);color:#fff}
+  .admin-table .act .edt:hover{background:var(--yellow)}
+  .pill{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.1em;border:1.5px solid var(--ink);padding:3px 8px;background:var(--lime);display:inline-block}
+  .pill.closed{background:#e8e4d8;color:#96917f}
+  .pill.urgent{background:var(--red);color:#fff}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .stat-box{background:var(--card);border:2.5px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:16px}
+  .stat-box .num{font-family:var(--display);font-size:1.8rem;font-weight:800;line-height:1}
+  .stat-box .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-soft);margin-top:6px;display:block}
+  .bar-h{height:10px;background:#f0ece0;border:1.5px solid var(--ink);position:relative;margin-top:6px;overflow:hidden}
+  .bar-h i{display:block;height:100%;background:repeating-linear-gradient(45deg,var(--blue) 0 6px,#5d76ff 6px 12px)}
+  .user-info{font-family:var(--mono);font-size:11px;color:var(--ink);background:var(--paper);border:2px solid var(--ink);padding:6px 10px;box-shadow:2px 2px 0 var(--ink)}
+  @media(max-width:640px){.row2,.row3{grid-template-columns:1fr}.admin-main{padding:24px 16px 60px}.stat-grid{grid-template-columns:1fr 1fr}}
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+    20%, 40%, 60%, 80% { transform: translateX(8px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="admin-login" id="loginScreen">
+  <form class="admin-login__box" id="loginForm">
+    <span class="mono-kick" style="color:var(--blue)">🔐 ADMIN AREA</span>
+    <h1>Kontrol<span style="color:var(--red)">.</span>Pusat</h1>
+    <label>EMAIL</label>
+    <input type="email" id="emailInput" placeholder="admin@infounjku.id" autocomplete="email" required>
+    <label>PASSWORD</label>
+    <div class="passwrap">
+      <input type="password" id="passInput" placeholder="••••••••" autocomplete="current-password" required>
+      <button type="button" id="togglePass" class="passeye" aria-label="Lihat password">🙈</button>
+    </div>
+    <button class="btn" type="submit" id="loginBtn">🔓 Login →</button>
+    <p class="hint mono" style="margin-top:14px">💡 User dibuat di Supabase Dashboard → Authentication → Users</p>
+  </form>
+</div>
+
+<div id="adminApp" hidden>
+  <header class="admin-top">
+    <span class="logo"><span class="star">✳</span><span class="logo__word">INFOUNJ<em>KU</em></span><span class="mode-chip">ADMIN</span></span>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="user-info" id="userInfo">👤 ...</span>
+      <a class="btn btn--sm btn--ghost" href="index.html">Back</a>
+      <button class="btn btn--sm" id="logoutBtn" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-note">Pastikan lowongan dan agenda ter-update!</div>
+    <div class="admin-tabs">
+      <button class="chip active" data-tab="lowongan" type="button">📋 Lowongan</button>
+      <button class="chip" data-tab="events" type="button">🗓 Events</button>
+      <button class="chip" data-tab="analytics" type="button">📊 Analytics</button>
+    </div>
+
+    <section id="tab-lowongan">
+      <div class="admin-card">
+        <h3 id="jobFormTitle">＋ Tambah Lowongan</h3>
+        <form id="jobForm" class="admin-form">
+          <div class="row2">
+            <label>ORGANISASI<input id="jobOrg" required maxlength="120" placeholder="BEM UNJ"></label>
+            <label>KATEGORI
+              <select id="jobCat">
+                <option value="bem">bem</option><option value="hima">hima</option><option value="ukm">ukm</option>
+                <option value="event">event</option><option value="riset">riset</option><option value="umum">umum</option>
+              </select>
+            </label>
+          </div>
+          <label>JUDUL LOWONGAN<input id="jobTitle" required maxlength="160" placeholder="Open Recruitment Staff Muda 2026"></label>
+          <label>TAGS (pisahkan dengan koma)<input id="jobTags" maxlength="200" placeholder="Divisi Acara, Publikasi, Dokumentasi"></label>
+          <label>👥 ROLE / DIVISI DIBUTUHKAN (pisahkan dengan koma)<input id="jobRoles" maxlength="200" placeholder="Staff Acara, Desain Grafis, Humas"></label>
+          <label>🔗 LINK PENDAFTARAN (http/https aja)<input id="jobLink" type="url" placeholder="https://forms.gle/xxx"></label>
+          <div class="row3">
+            <label>TERISI<input type="number" id="jobFilled" min="0" value="0"></label>
+            <label>KUOTA<input type="number" id="jobTotal" min="1" value="50"></label>
+            <label>DEADLINE<input type="datetime-local" id="jobDeadline" required></label>
+          </div>
+          <div class="admin-actions">
+            <button class="btn btn--sm" type="submit">💾 Simpan</button>
+            <button class="btn btn--sm btn--ghost" type="button" id="jobCancel" hidden>Batal Edit</button>
+          </div>
+        </form>
+      </div>
+      <div class="admin-tablewrap">
+        <table class="admin-table"><thead><tr><th>Judul</th><th>Organisasi</th><th>Kategori</th><th>Role</th><th>Link</th><th>Kuota</th><th>Deadline</th><th>Aksi</th></tr></thead><tbody id="jobRows"></tbody></table>
+      </div>
+    </section>
+
+    <section id="tab-events" hidden>
+      <div class="admin-card">
+        <h3 id="evFormTitle">＋ Tambah Event</h3>
+        <form id="evForm" class="admin-form">
+          <label>JUDUL EVENT<input id="evTitle" required maxlength="160" placeholder="Sosialisasi Open Recruitment"></label>
+          <div class="row3">
+            <label>TAG<input id="evTag" maxlength="40" placeholder="EVENT / WEBINAR / WORKSHOP"></label>
+            <label>TANGGAL<input type="date" id="evDate" required></label>
+            <label>JAM<input type="time" id="evTime" value="09:00" required></label>
+          </div>
+          <label>LOKASI<input id="evLoc" maxlength="160" placeholder="Aula Kampus / Zoom"></label>
+          <div class="admin-actions">
+            <button class="btn btn--sm" type="submit">💾 Simpan</button>
+            <button class="btn btn--sm btn--ghost" type="button" id="evCancel" hidden>Batal Edit</button>
+          </div>
+        </form>
+      </div>
+      <div class="admin-tablewrap">
+        <table class="admin-table"><thead><tr><th>Judul</th><th>Tag</th><th>Lokasi</th><th>Tanggal</th><th>Jam</th><th>Aksi</th></tr></thead><tbody id="evRows"></tbody></table>
+      </div>
+    </section>
+
+    <section id="tab-analytics" hidden>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="admin-card">
+        <h3>📈 TOP LOWONGAN (30 Hari)</h3>
+        <div class="admin-tablewrap">
+          <table class="admin-table"><thead><tr><th>Judul</th><th>Organisasi</th><th>Total</th><th>Klik 30h</th><th>Uniques</th><th>CTR</th></tr></thead><tbody id="topRows"></tbody></table>
+        </div>
+      </div>
+      <div class="admin-card">
+        <h3>🏆 KLIK PER ORGANISASI</h3>
+        <div class="admin-tablewrap">
+          <table class="admin-table"><thead><tr><th>Organisasi</th><th>Kategori</th><th>Total</th><th>Uniques</th><th>Job</th><th>Avg</th></tr></thead><tbody id="orgRows"></tbody></table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ CONFIG ═══ */
+const SUPABASE_URL = 'https://ntleoqyavsdhfmamuewe.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50bGVvcXlhdnNkaGZtYW11ZXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MDM5ODksImV4cCI6MjEwNzM3OTk4OX0.WXilYHDb4TXZcYh-p9NNeqGXu5dQYFFOlqYqiV4OAlQ';
+let ACCESS_TOKEN = sessionStorage.getItem('iu_token') || '';
+
+function getHeaders(){
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': ACCESS_TOKEN ? `Bearer ${ACCESS_TOKEN}` : `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+/* ═══ HELPERS ═══ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDt = ms => new Date(ms).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+const toLocalInput = ms => { const d = new Date(ms); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); };
+
+let toastTimer;
+function showToast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+}
+
+/* ═══ GUARD 401 ═══ */
+function guard(res){
+  if (res.status === 401) {
+    ACCESS_TOKEN = '';
+    sessionStorage.removeItem('iu_token');
+    showToast('⏱ Sesi login habis — silakan login ulang.');
+    setTimeout(() => location.reload(), 1500);
+    throw new Error('Sesi habis');
+  }
+  return res;
+}
+
+/* ═══ SUPABASE AUTH ═══ */
+async function getCurrentUser(){
+  if (!ACCESS_TOKEN) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+    });
+    if (!res.ok) { ACCESS_TOKEN = ''; sessionStorage.removeItem('iu_token'); return null; }
+    return await res.json();
+  } catch (e) { return null; }
+}
+function unlock(){
+  $('loginScreen').style.display = 'none';
+  $('adminApp').hidden = false;
+  loadJobs(); loadEvents();
+}
+async function checkSession(){
+  const user = await getCurrentUser();
+  if (user) { $('userInfo').textContent = `👤 ${user.email}`; unlock(); }
+}
+checkSession();
+
+/* ═══ MATA BUKA / MATA MEREM ═══ */
+$('togglePass').addEventListener('click', () => {
+  const inp = $('passInput');
+  const showing = inp.type === 'password';      // sekarang tersembunyi → mau ditampilkan
+  inp.type = showing ? 'text' : 'password';
+  $('togglePass').textContent = showing ? '👁️' : '🙈';   // show = mata buka, hide = mata merem
+  $('togglePass').setAttribute('aria-label', showing ? 'Sembunyikan password' : 'Lihat password');
+});
+
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('emailInput').value.trim();
+  const password = $('passInput').value;
+  const btn = $('loginBtn');
+  btn.disabled = true; btn.textContent = '⏳ Memproses...';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Login gagal');
+    ACCESS_TOKEN = data.access_token;
+    sessionStorage.setItem('iu_token', data.access_token);
+    $('userInfo').textContent = `👤 ${data.user.email}`;
+    unlock();
+    showToast('🔓 Login sukses!');
+  } catch (err) {
+    showToast('⚠️ ' + err.message);
+    const box = document.querySelector('.admin-login__box');
+    box.style.animation = 'shake 0.5s';
+    setTimeout(() => box.style.animation = '', 500);
+  } finally {
+    btn.disabled = false; btn.textContent = '🔓 Login →';
+  }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, { method:'POST', headers:{ 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${ACCESS_TOKEN}` } });
+  } catch (e) {}
+  ACCESS_TOKEN = '';
+  sessionStorage.removeItem('iu_token');
+  location.reload();
+});
+
+/* ═══ TABS ═══ */
+document.querySelectorAll('.admin-tabs .chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('.admin-tabs .chip').forEach(x => x.classList.remove('active'));
+  c.classList.add('active');
+  const tab = c.dataset.tab;
+  $('tab-lowongan').hidden = tab !== 'lowongan';
+  $('tab-events').hidden = tab !== 'events';
+  $('tab-analytics').hidden = tab !== 'analytics';
+  if (tab === 'analytics') loadAnalytics();
+}));
+
+/* ═══ LOWONGAN CRUD (dengan ROLE) ═══ */
+let JOBS = [];
+async function loadJobs(){
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=*&order=id.desc`, { headers: getHeaders() }));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    JOBS = await res.json();
+    $('jobRows').innerHTML = JOBS.map(j => {
+      const left = new Date(j.deadline).getTime() - Date.now();
+      const pill = left <= 0 ? '<span class="pill closed">TUTUP</span>' : left <= 3*864e5 ? '<span class="pill urgent">SEGERA</span>' : '<span class="pill">AKTIF</span>';
+      const linkPill = j.link_daftar ? '<span class="pill">🔗 ADA</span>' : '<span class="pill closed">KOSONG</span>';
+      return `<tr>
+        <td><b>${esc(j.title)}</b><br>${pill}</td>
+        <td>${esc(j.org)}</td>
+        <td><span class="pill">${esc(j.category)}</span></td>
+        <td style="max-width:160px;font-size:.78rem">${esc(j.roles || '—')}</td>
+        <td>${linkPill}</td>
+        <td>${j.quota_filled || 0}/${j.quota_total || 0}</td>
+        <td class="mono" style="font-size:11px">${fmtDt(new Date(j.deadline).getTime())}</td>
+        <td><div class="act">
+          <button class="edt" type="button" onclick="editJob(${j.id})">✎ Edit</button>
+          <button class="del" type="button" onclick="delJob(${j.id})">🗑 Hapus</button>
+        </div></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;padding:30px">Belum ada lowongan.</td></tr>';
+  } catch (e) { showToast('⚠️ ' + e.message); }
+}
+
+$('jobForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const linkRaw = $('jobLink').value.trim();
+  const linkOk = linkRaw === '' || /^https?:\/\//i.test(linkRaw);
+  if (!linkOk) { showToast('⚠️ Link pendaftaran harus diawali http:// atau https://'); return; }
+  const payload = {
+    org: $('jobOrg').value.trim(),
+    category: $('jobCat').value,
+    title: $('jobTitle').value.trim(),
+    tags: $('jobTags').value.trim(),
+    roles: $('jobRoles').value.trim() || null,
+    link_daftar: linkRaw || null,
+    quota_filled: +$('jobFilled').value || 0,
+    quota_total: +$('jobTotal').value || 1,
+    deadline: new Date($('jobDeadline').value).toISOString()
+  };
+  const id = $('jobForm').dataset.editId;
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/lowongan${id ? `?id=eq.${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    }));
+    if (!res.ok) throw new Error((await res.text()).slice(0, 160));
+    showToast(id ? '✅ Lowongan di-update!' : '✅ Lowongan baru tayang!');
+    resetJobForm(); loadJobs();
+  } catch (err) { showToast('⚠️ ' + err.message); }
+});
+
+window.editJob = id => {
+  const j = JOBS.find(x => x.id === id); if (!j) return;
+  $('jobForm').dataset.editId = id;
+  $('jobOrg').value = j.org; $('jobCat').value = j.category; $('jobTitle').value = j.title;
+  $('jobTags').value = j.tags || ''; $('jobRoles').value = j.roles || ''; $('jobLink').value = j.link_daftar || '';
+  $('jobFilled').value = j.quota_filled || 0; $('jobTotal').value = j.quota_total || 50;
+  $('jobDeadline').value = toLocalInput(new Date(j.deadline).getTime());
+  $('jobFormTitle').textContent = '✎ Edit Lowongan #' + id;
+  $('jobCancel').hidden = false;
+  $('jobForm').scrollIntoView({ behavior:'smooth', block:'center' });
+};
+
+window.delJob = async id => {
+  if (!confirm('Yakin hapus lowongan #' + id + '?')) return;
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/lowongan?id=eq.${id}`, { method:'DELETE', headers: getHeaders() }));
+    if (!res.ok) throw new Error((await res.text()).slice(0,160));
+    showToast('🗑 Lowongan dihapus.'); loadJobs();
+  } catch (e) { showToast('⚠️ ' + e.message); }
+};
+
+function resetJobForm(){
+  $('jobForm').reset(); delete $('jobForm').dataset.editId;
+  $('jobFormTitle').textContent = '＋ Tambah Lowongan'; $('jobCancel').hidden = true;
+}
+$('jobCancel').addEventListener('click', resetJobForm);
+
+/* ═══ EVENTS CRUD ═══ */
+let EVENTS = [];
+async function loadEvents(){
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=event_date.desc`, { headers: getHeaders() }));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    EVENTS = await res.json();
+    $('evRows').innerHTML = EVENTS.map(ev => `<tr>
+      <td><b>${esc(ev.title)}</b></td>
+      <td><span class="pill">${esc(ev.tag || 'EVENT')}</span></td>
+      <td>${esc(ev.location || '-')}</td>
+      <td class="mono" style="font-size:11px">${esc(ev.event_date)}</td>
+      <td class="mono" style="font-size:11px">${esc(ev.event_time || '-')}</td>
+      <td><div class="act">
+        <button class="edt" type="button" onclick="editEv(${ev.id})">✎ Edit</button>
+        <button class="del" type="button" onclick="delEv(${ev.id})">🗑 Hapus</button>
+      </div></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px">Belum ada event.</td></tr>';
+  } catch (e) { showToast('⚠️ ' + e.message); }
+}
+
+$('evForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const payload = {
+    title: $('evTitle').value.trim(),
+    tag: $('evTag').value.trim() || 'EVENT',
+    event_date: $('evDate').value,
+    event_time: $('evTime').value,
+    location: $('evLoc').value.trim() || 'TBA'
+  };
+  const id = $('evForm').dataset.editId;
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/events${id ? `?id=eq.${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    }));
+    if (!res.ok) throw new Error((await res.text()).slice(0, 160));
+    showToast(id ? '✅ Event di-update!' : '✅ Event baru masuk agenda!');
+    resetEvForm(); loadEvents();
+  } catch (err) { showToast('⚠️ ' + err.message); }
+});
+
+window.editEv = id => {
+  const ev = EVENTS.find(x => x.id === id); if (!ev) return;
+  $('evForm').dataset.editId = id;
+  $('evTitle').value = ev.title; $('evTag').value = ev.tag || ''; $('evDate').value = ev.event_date;
+  $('evTime').value = ev.event_time || '09:00'; $('evLoc').value = ev.location || '';
+  $('evFormTitle').textContent = '✎ Edit Event #' + id;
+  $('evCancel').hidden = false;
+  $('evForm').scrollIntoView({ behavior:'smooth', block:'center' });
+};
+
+window.delEv = async id => {
+  if (!confirm('Yakin hapus event #' + id + '?')) return;
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/events?id=eq.${id}`, { method:'DELETE', headers: getHeaders() }));
+    if (!res.ok) throw new Error((await res.text()).slice(0,160));
+    showToast('🗑 Event dihapus.'); loadEvents();
+  } catch (e) { showToast('⚠️ ' + e.message); }
+};
+
+function resetEvForm(){
+  $('evForm').reset(); delete $('evForm').dataset.editId;
+  $('evFormTitle').textContent = '＋ Tambah Event'; $('evCancel').hidden = true;
+}
+$('evCancel').addEventListener('click', resetEvForm);
+
+/* ═══ ANALYTICS ═══ */
+async function loadAnalytics(){
+  try {
+    const [lRes, eRes, cRes, topRes, orgRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=id,deadline`, { headers: getHeaders() }).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/events?select=id`, { headers: getHeaders() }).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/click_events?select=id,created_at,session_id&limit=10000`, { headers: getHeaders() }).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/analytics_top_jobs_30d?select=*`, { headers: getHeaders() }).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/analytics_org_30d?select=*`, { headers: getHeaders() }).then(r=>r.json()),
+    ]);
+    const nowTs = Date.now();
+    const activeJobs = lRes.filter(j => new Date(j.deadline).getTime() > nowTs).length;
+    const totalClicks30 = cRes.filter(c => nowTs - new Date(c.created_at).getTime() < 30*864e5).length;
+    const totalUniques = new Set(cRes.map(c => c.session_id).filter(Boolean)).size;
+
+    $('statGrid').innerHTML = `
+      <div class="stat-box"><div class="num">${activeJobs}</div><span class="lbl">LOWONGAN AKTIF</span></div>
+      <div class="stat-box"><div class="num">${lRes.length}</div><span class="lbl">TOTAL LOWONGAN</span></div>
+      <div class="stat-box"><div class="num">${totalClicks30}</div><span class="lbl">KLIK 30 HARI</span></div>
+      <div class="stat-box"><div class="num">${totalUniques}</div><span class="lbl">UNIK USER</span></div>
+    `;
+
+    const maxClicks = Math.max(1, ...topRes.map(t => t.clicks_30d || 0));
+    $('topRows').innerHTML = topRes.map(t => {
+      const ctr = t.total_clicks > 0 ? Math.round(((t.clicks_30d || 0) / t.total_clicks) * 100) : 0;
+      const w = Math.max(4, ((t.clicks_30d || 0) / maxClicks) * 100);
+      return `<tr>
+        <td><b>${esc(t.title)}</b></td><td>${esc(t.org)}</td><td>${t.total_clicks}</td>
+        <td><div class="bar-h"><i style="width:${w}%"></i></div> ${t.clicks_30d || 0}</td>
+        <td>${t.uniques_30d || 0}</td><td><span class="pill">${ctr}%</span></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px">Belum ada data.</td></tr>';
+
+    const maxOrg = Math.max(1, ...orgRes.map(o => o.total_clicks || 0));
+    $('orgRows').innerHTML = orgRes.map(o => {
+      const avg = o.job_count > 0 ? Math.round((o.total_clicks || 0) / o.job_count) : 0;
+      const w = Math.max(4, ((o.total_clicks || 0) / maxOrg) * 100);
+      return `<tr>
+        <td><b>${esc(o.org)}</b></td><td><span class="pill">${esc(o.category || 'umum')}</span></td>
+        <td><div class="bar-h"><i style="width:${w}%"></i></div> ${o.total_clicks || 0}</td>
+        <td>${o.unique_sessions || 0}</td><td>${o.job_count || 0}</td><td>${avg}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px">Belum ada data.</td></tr>';
+
+    showToast('📊 Analytics di-refresh!');
+  } catch (e) { showToast('⚠️ ' + e.message); }
+}
+</script>
+</body>
+</html>
