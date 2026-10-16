@@ -829,7 +829,7 @@ if (collabForm) {
       const captchaResponse = grecaptcha.getResponse();
       if (captchaResponse.length === 0) {
         showToast('⚠️ Tolong centang "I am not a robot" dulu!', 'error');
-        return; // Hentikan proses submit kalau belum dicentang
+        return;
       }
     }
 
@@ -845,25 +845,31 @@ if (collabForm) {
         contact: formData.get('contact'),
         collab_type: formData.get('collab_type'),
         message: formData.get('message'),
-        created_at: new Date().toISOString()
       };
 
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/collab_requests`, {
+      // --- INI YANG DIUBAH ---
+      const res = await fetch('https://ntleoqyavsdhfmamuewe.supabase.co/functions/v1/collab-request', {
         method: 'POST',
-        headers: HEADERS,
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Gagal kirim');
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gagal kirim');
+      }
+      // -----------------------
 
       showToast('✅ Proposal kolaborasi berhasil dikirim! Admin akan segera review.');
       collabForm.reset();
       
-      // Reset reCAPTCHA setelah sukses
       if (typeof grecaptcha !== 'undefined') {
         grecaptcha.reset();
       }
     } catch (err) {
+      console.error(err);
       showToast('❌ Gagal mengirim. Coba lagi nanti.', 'error');
     } finally {
       submitBtn.innerText = originalText;
