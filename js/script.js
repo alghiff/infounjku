@@ -383,8 +383,21 @@ async function fetchIgPosts() {
     rail.innerHTML = data.map(p => {
       const mc = /^m[1-6]$/.test(p.media_class || '') ? p.media_class : 'm1';
       const cap = escHtml(p.caption || '').replace(/#([\w\d_]+)/g, '<b>#$1</b>');
+
+      const imgSrc = p.media_type === 'VIDEO' && p.thumbnail_url 
+        ? p.thumbnail_url 
+        : p.media_url;
+  
+      const mediaHtml = imgSrc
+        ? `<img src="${escHtml(imgSrc)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+        : `<span class="poster">${escHtml(p.poster_text || '')}</span>`;
+
+      const permalink = p.permalink || '#';
+
       return `<article class="ig-card reveal in">
-        <div class="ig-media ${mc}"><span class="poster">${escHtml(p.poster_text)}</span><span class="auto-badge">AUTO • SYNC</span></div>
+        <a class="ig-media ${mc}" href="${escHtml(permalink)}" target="_blank" rel="noopener">
+          ${mediaHtml}<span class="auto-badge">AUTO • SYNC</span>
+        </a>
         <div class="ig-body">
           <div class="ig-user"><span class="av">IU</span>@infounjku<time>${escHtml(p.posted_label)}</time></div>
           <p>${cap}</p>
