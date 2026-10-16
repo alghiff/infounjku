@@ -293,11 +293,11 @@
     <form class="notify-form reveal" id="collabForm" style="transition-delay:.1s">
       <div id="formFields">
         <label>NAMA ORGANISASI / KOMUNITAS</label>
-        <input type="text" id="collabOrg" required placeholder="contoh Panitia PENS 2026">
+        <input type="text" id="collabOrg" name="org_name" required placeholder="contoh Panitia PENS 2026">
         <label>KONTAK (EMAIL / WHATSAPP)</label>
-        <input type="text" id="collabContact" required placeholder="humas@pens.unjku.ac.id / 08xx">
+        <input type="text" id="collabContact"  name="contact" required placeholder="humas@pens.unjku.ac.id / 08xx">
         <label>JENIS KOLABORASI</label>
-        <select id="collabType">
+        <select id="collabType" name="collab_type">
           <option>Publikasi Lowongan / Open Recruitment</option>
           <option>Media Partner</option>
           <option>Sponsorship</option>
@@ -305,7 +305,7 @@
           <option>Lainnya</option>
         </select>
         <label>PESAN / BRIEF SINGKAT</label>
-        <textarea id="collabMsg" rows="4" required placeholder="Ceritain rencana kolaborasi lu..."></textarea>
+        <textarea id="collabMsg" rows="4" name="message" required placeholder="Ceritain rencana kolaborasi lu..."></textarea>
         <!-- Widget reCAPTCHA (Ganti tulisan SITE_KEY_LU pakai key dari Google) -->
         <div class="g-recaptcha" data-sitekey="6LeT7vAtAAAAAD_Q12ZtqW3Y5zrBV6Om0OCLXPn9" style="margin-bottom: 16px; transform: scale(0.9); transform-origin: left;"></div>
 
