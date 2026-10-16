@@ -837,9 +837,10 @@ if (collabForm) {
     const originalText = submitBtn.innerText;
     submitBtn.innerText = 'Mengirim...';
     submitBtn.disabled = true;
-
+    
     try {
       const formData = new FormData(collabForm);
+      const captchaToken = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
       const payload = {
         org_name: formData.get('org_name'),
         contact: formData.get('contact'),
