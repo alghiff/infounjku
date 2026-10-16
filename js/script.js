@@ -845,9 +845,9 @@ if (collabForm) {
         contact: formData.get('contact'),
         collab_type: formData.get('collab_type'),
         message: formData.get('message'),
+        captchaToken: captchaToken
       };
 
-      // --- INI YANG DIUBAH ---
       const res = await fetch('https://ntleoqyavsdhfmamuewe.supabase.co/functions/v1/collab-request', {
         method: 'POST',
         headers: {
