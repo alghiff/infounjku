@@ -1,11 +1,12 @@
 /* ══════════════════════════════════════════════════════════
-   INFOUNJKU — PRODUCTION SCRIPT v11
+   INFOUNJKU — PRODUCTION SCRIPT v12
    + share pakai logo SVG asli aplikasi
    + hapus preview link di share sheet
    + tombol "Reminder" & "Share" (tanpa H-1 / Bebas)
    + modal detail compact di HP
-   + banner install PWA bottom-sheet rapi
+   + banner install PWA bottom-sheet rapi (floating, di luar form)
    + bintang hero inline (posisi konsisten)
+   + anti info-leak di toast durasi custom
    ══════════════════════════════════════════════════════════ */
 
 const SUPABASE_URL = 'https://ntleoqyavsdhfmamuewe.supabase.co';
@@ -70,9 +71,9 @@ window.addEventListener('hashchange', () => handleHashRoute());
   .share-grid .ic{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 auto}
   .share-grid .ic svg{width:26px;height:26px;display:block}
   .share-grid button:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink);background:var(--yellow)}
-  /* BANNER INSTALL PWA — BOTTOM SHEET RAPI HP & DESKTOP */
-  #installBanner{position:fixed;left:12px;right:12px;bottom:12px;margin:0 auto;max-width:520px;z-index:130;background:var(--card);border:2.5px solid var(--ink);box-shadow:8px 8px 0 var(--blue);padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;transform:translateY(160%);transition:transform .35s cubic-bezier(.2,.7,.2,1)}
-  #installBanner.show{transform:translateY(0)}
+  /* BANNER INSTALL PWA — BOTTOM SHEET RAPI HP & DESKTOP (floating, di luar form) */
+  #installBanner{position:fixed;left:12px;right:12px;bottom:12px;margin:0 auto;max-width:520px;z-index:130;background:var(--card);border:2.5px solid var(--ink);box-shadow:8px 8px 0 var(--blue);padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;transform:translateY(160%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.7,.2,1),visibility .35s}
+  #installBanner.show{transform:translateY(0);visibility:visible}
   #installBanner .ib__ic{font-size:1.6rem;flex-shrink:0}
   #installBanner .ib__txt{font-size:.85rem;font-weight:800;flex:1 1 180px;min-width:0}
   #installBanner .ib__txt small{display:block;font-weight:500;color:var(--ink-soft);font-size:.72rem}
@@ -383,21 +384,8 @@ async function fetchIgPosts() {
     rail.innerHTML = data.map(p => {
       const mc = /^m[1-6]$/.test(p.media_class || '') ? p.media_class : 'm1';
       const cap = escHtml(p.caption || '').replace(/#([\w\d_]+)/g, '<b>#$1</b>');
-
-      const imgSrc = p.media_type === 'VIDEO' && p.thumbnail_url 
-        ? p.thumbnail_url 
-        : p.media_url;
-  
-      const mediaHtml = imgSrc
-        ? `<img src="${escHtml(imgSrc)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
-        : `<span class="poster">${escHtml(p.poster_text || '')}</span>`;
-
-      const permalink = p.permalink || '#';
-
       return `<article class="ig-card reveal in">
-        <a class="ig-media ${mc}" href="${escHtml(permalink)}" target="_blank" rel="noopener">
-          ${mediaHtml}<span class="auto-badge">AUTO • SYNC</span>
-        </a>
+        <div class="ig-media ${mc}"><span class="poster">${escHtml(p.poster_text)}</span><span class="auto-badge">AUTO • SYNC</span></div>
         <div class="ig-body">
           <div class="ig-user"><span class="av">IU</span>@infounjku<time>${escHtml(p.posted_label)}</time></div>
           <p>${cap}</p>
@@ -910,11 +898,12 @@ document.getElementById('igPrev').onclick = () => rail.scrollBy({ left: -320, be
 
 const toast = document.getElementById('toast');
 let toastTimer;
-function showToast(msg){
+function showToast(msg, dur = 3200){
   toast.textContent = msg;
   toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+  const ms = Number.isFinite(+dur) && +dur > 0 ? +dur : 3200;
+  toastTimer = setTimeout(() => toast.classList.remove('show'), ms);
 }
 
 document.getElementById('burger').onclick = () => document.getElementById('navLinks').classList.toggle('open');
@@ -973,42 +962,63 @@ setInterval(refreshAll, SYNC_INTERVAL);
 
 // ==========================================
 // LOGIC PWA UNIVERSAL (CHROME, EDGE, BRAVE, SAFARI)
+// floating bottom-sheet, TERPISAH dari form
 // ==========================================
 let deferredPrompt;
-const installBtn = document.getElementById('installAppBtn');
+const installBanner = document.getElementById('installBanner');
+const installYes = document.getElementById('installYes');
+const installNo  = document.getElementById('installNo');
+const IU_INSTALL_DISMISS = 'iu_install_dismiss';
 
-// Event khusus browser berbasis Chromium (Chrome, Edge, Brave, Opera)
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+function showInstallBanner(){
+  if (!installBanner || !deferredPrompt) return;
+  if (isStandalone()) return;                            // udah terinstall → skip
+  if (sessionStorage.getItem(IU_INSTALL_DISMISS)) return; // pernah pencet "Nanti" sesi ini
+  installBanner.classList.add('show');
+  installBanner.setAttribute('aria-hidden', 'false');
+}
+function hideInstallBanner(){
+  if (!installBanner) return;
+  installBanner.classList.remove('show');
+  installBanner.setAttribute('aria-hidden', 'true');
+}
+
+// Chromium (Chrome/Edge/Brave/Opera) — HP & Desktop
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  if (installBtn) {
-    installBtn.style.display = 'flex'; // Tampilkan tombol install
-  }
+  setTimeout(showInstallBanner, 2500);
 });
 
-if (installBtn) {
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) {
-      showToast('Browser tidak mendukung install app.', 'error');
-      return;
-    }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      showToast('✅ Aplikasi berhasil diinstall ke HP/Desktop!');
-    }
-    deferredPrompt = null;
-    installBtn.style.display = 'none'; // Sembunyikan tombol kalau udah diinstall
-  });
-}
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  hideInstallBanner();
+  showToast('✅ Aplikasi infounjku terpasang di perangkat lu!');
+});
 
-// Event khusus iOS Safari (iPhone/iPad)
+if (installYes) installYes.addEventListener('click', async () => {
+  hideInstallBanner();
+  if (!deferredPrompt) {
+    showToast('ℹ️ Install manual: menu browser (⋮) → "Install app / Tambahkan ke Layar Utama".');
+    return;
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') showToast('✅ Aplikasi berhasil diinstall ke HP/Desktop!');
+  deferredPrompt = null;
+});
+
+if (installNo) installNo.addEventListener('click', () => {
+  sessionStorage.setItem(IU_INSTALL_DISMISS, '1');
+  hideInstallBanner();
+});
+
+// iOS Safari (iPhone/iPad)
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-if (isIos && !isInStandaloneMode) {
-  // Munculin toast khusus buat user iPhone
+if (isIos && !isStandalone()) {
   setTimeout(() => {
-    showToast('📱 User iPhone: Tap ikon Share (⬆️) di bawah > pilih "Add to Home Screen" buat install!', 'info', 8000);
+    showToast('📱 User iPhone: Tap ikon Share (⬆️) di bawah > pilih "Add to Home Screen" buat install!', 8000);
   }, 3000);
 }

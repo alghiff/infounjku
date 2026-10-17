@@ -14,9 +14,7 @@
   .admin-tabs{margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap}
   .admin-tabs .chip{border:2.5px solid var(--ink);background:var(--card);padding:10px 20px;border-radius:999px;font-weight:800;box-shadow:3px 3px 0 var(--ink)}
   .admin-tabs .chip.active{background:var(--blue);color:#fff}
-  /* LOGO ADMIN: KU NYAMBUNG + TETEP MIRING */
   .logo__word em{font-style:italic}
-  /* LOGIN */
   .admin-login{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99}
   .admin-login__box{background:var(--card);border:2.5px solid var(--ink);box-shadow:8px 8px 0 var(--lime);padding:34px 30px;width:100%;max-width:420px}
   .admin-login__box h1{font-family:var(--display);font-weight:800;font-size:1.8rem;margin:6px 0 18px;text-transform:uppercase}
@@ -25,12 +23,10 @@
   .admin-login__box input:focus{box-shadow:3px 3px 0 var(--blue)}
   .admin-login__box .btn{width:100%;justify-content:center}
   .admin-login__box .hint{font-size:10px;color:var(--ink-soft);margin-top:12px}
-  /* PASSWRAP RAPI: MATA CENTER SEMPURNA */
   .passwrap{position:relative;margin-bottom:16px}
   .passwrap input{margin-bottom:0;padding-right:46px}
   .passeye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.15rem;line-height:1;cursor:pointer;padding:4px}
   .passeye:hover{transform:translateY(-50%) scale(1.15)}
-  /* TOP BAR */
   .admin-top{position:sticky;top:0;z-index:50;background:var(--yellow);border-bottom:2.5px solid var(--ink);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
   .admin-main{padding:34px 28px 80px;max-width:1080px;margin:0 auto}
   .admin-card{background:var(--card);border:2.5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:24px 22px;margin-bottom:26px}
@@ -61,6 +57,7 @@
   .bar-h{height:10px;background:#f0ece0;border:1.5px solid var(--ink);position:relative;margin-top:6px;overflow:hidden}
   .bar-h i{display:block;height:100%;background:repeating-linear-gradient(45deg,var(--blue) 0 6px,#5d76ff 6px 12px)}
   .user-info{font-family:var(--mono);font-size:11px;color:var(--ink);background:var(--paper);border:2px solid var(--ink);padding:6px 10px;box-shadow:2px 2px 0 var(--ink)}
+  .lock-notice{font-family:var(--mono);font-size:10px;color:var(--red);text-align:center;margin-top:8px;letter-spacing:.05em}
   @media(max-width:640px){.row2,.row3{grid-template-columns:1fr}.admin-main{padding:24px 16px 60px}.stat-grid{grid-template-columns:1fr 1fr}}
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -83,6 +80,7 @@
       <button type="button" id="togglePass" class="passeye" aria-label="Lihat password">🙈</button>
     </div>
     <button class="btn" type="submit" id="loginBtn">🔓 Login →</button>
+    <div id="lockNotice" class="lock-notice" hidden></div>
     <p class="hint mono" style="margin-top:14px">💡 User dibuat di Supabase Dashboard → Authentication → Users</p>
   </form>
 </div>
@@ -218,6 +216,45 @@ function guard(res){
   return res;
 }
 
+/* ═══ ANTI INFO-LEAK: mapping error aman ═══ */
+const ERR_MAP = [
+  [/invalid login credentials/i,             'Email atau password salah.'],
+  [/email not confirmed/i,                   'Email belum diverifikasi.'],
+  [/rate limit|too many requests|429/i,      'Terlalu banyak permintaan. Coba lagi sebentar lagi.'],
+  [/row-level security|row level security|42501/i, 'Akses ditolak oleh sistem keamanan.'],
+  [/jwt expired|token expired/i,             'Sesi login habis — silakan login ulang.'],
+  [/failed to fetch|networkerror|load failed/i, 'Koneksi internet bermasalah. Coba lagi.'],
+  [/server_5\d\d/i,                          'Server sedang bermasalah. Coba lagi sebentar lagi.'],
+  [/server_4\d\d/i,                          'Permintaan ditolak server.'],
+  [/invalid input syntax/i,                  'Data input tidak valid.'],
+  [/duplicate key/i,                         'Data duplikat.'],
+  [/check constraint/i,                      'Data tidak memenuhi aturan.'],
+];
+function safeErr(e, fallback = 'Terjadi kesalahan tak terduga. Coba lagi sebentar lagi.') {
+  const raw = String((e && e.message) || e || '');
+  for (const [re, msg] of ERR_MAP) if (re.test(raw)) return msg;
+  return fallback;
+}
+
+/* ═══ ANTI BRUTE-FORCE: throttle + lockout client-side ═══ */
+const RL = { MAX: 5, WINDOW: 60_000, LOCK: 5 * 60_000, KEY: 'iu_rl' };
+const rlLoad = () => { try { return JSON.parse(localStorage.getItem(RL.KEY)) || { fails: [], lockUntil: 0 }; } catch { return { fails: [], lockUntil: 0 }; } };
+const rlSave = s => localStorage.setItem(RL.KEY, JSON.stringify(s));
+function rlCheck() {
+  const s = rlLoad(), t = Date.now();
+  if (s.lockUntil > t) return { ok: false, waitMs: s.lockUntil - t };
+  s.fails = s.fails.filter(x => t - x < RL.WINDOW); rlSave(s);
+  return { ok: true, left: RL.MAX - s.fails.length };
+}
+function rlFail() {
+  const s = rlLoad(), t = Date.now();
+  s.fails.push(t);
+  if (s.fails.length >= RL.MAX) { s.lockUntil = t + RL.LOCK; s.fails = []; }
+  rlSave(s);
+}
+const rlReset = () => rlSave({ fails: [], lockUntil: 0 });
+const fmtWait = ms => { const m = Math.ceil(ms / 60000); return m >= 1 ? m + ' menit' : Math.max(1, Math.ceil(ms / 1000)) + ' detik'; };
+
 /* ═══ SUPABASE AUTH ═══ */
 async function getCurrentUser(){
   if (!ACCESS_TOKEN) return null;
@@ -237,20 +274,32 @@ function unlock(){
 async function checkSession(){
   const user = await getCurrentUser();
   if (user) { $('userInfo').textContent = `👤 ${user.email}`; unlock(); }
+  else {
+    const rl = rlCheck();
+    if (!rl.ok) {
+      const notice = $('lockNotice');
+      if (notice) { notice.hidden = false; notice.textContent = '🔒 Login terkunci. Coba lagi dalam ' + fmtWait(rl.waitMs) + '.'; }
+    }
+  }
 }
 checkSession();
 
 /* ═══ MATA BUKA / MATA MEREM ═══ */
 $('togglePass').addEventListener('click', () => {
   const inp = $('passInput');
-  const showing = inp.type === 'password';      // sekarang tersembunyi → mau ditampilkan
+  const showing = inp.type === 'password';
   inp.type = showing ? 'text' : 'password';
-  $('togglePass').textContent = showing ? '👁️' : '🙈';   // show = mata buka, hide = mata merem
+  $('togglePass').textContent = showing ? '👁️' : '🙈';
   $('togglePass').setAttribute('aria-label', showing ? 'Sembunyikan password' : 'Lihat password');
 });
 
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
+  const rl = rlCheck();
+  if (!rl.ok) {
+    showToast('🔒 Terlalu banyak percobaan gagal. Coba lagi dalam ' + fmtWait(rl.waitMs) + '.');
+    return;
+  }
   const email = $('emailInput').value.trim();
   const password = $('passInput').value;
   const btn = $('loginBtn');
@@ -261,15 +310,20 @@ $('loginForm').addEventListener('submit', async e => {
       headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error_description || data.msg || 'Login gagal');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error_description || data.msg || ('SERVER_' + res.status));
+    rlReset();
     ACCESS_TOKEN = data.access_token;
     sessionStorage.setItem('iu_token', data.access_token);
     $('userInfo').textContent = `👤 ${data.user.email}`;
+    const notice = $('lockNotice'); if (notice) notice.hidden = true;
     unlock();
     showToast('🔓 Login sukses!');
   } catch (err) {
-    showToast('⚠️ ' + err.message);
+    rlFail();
+    const st = rlCheck();
+    const tail = st.ok ? ` (sisa ${st.left} percobaan)` : ` — terkunci ${fmtWait(st.waitMs)}`;
+    showToast('⚠️ ' + safeErr(err) + tail);
     const box = document.querySelector('.admin-login__box');
     box.style.animation = 'shake 0.5s';
     setTimeout(() => box.style.animation = '', 500);
@@ -303,7 +357,7 @@ let JOBS = [];
 async function loadJobs(){
   try {
     const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=*&order=id.desc`, { headers: getHeaders() }));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error('SERVER_' + res.status);
     JOBS = await res.json();
     $('jobRows').innerHTML = JOBS.map(j => {
       const left = new Date(j.deadline).getTime() - Date.now();
@@ -323,7 +377,7 @@ async function loadJobs(){
         </div></td>
       </tr>`;
     }).join('') || '<tr><td colspan="8" style="text-align:center;padding:30px">Belum ada lowongan.</td></tr>';
-  } catch (e) { showToast('⚠️ ' + e.message); }
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 }
 
 $('jobForm').addEventListener('submit', async e => {
@@ -349,10 +403,10 @@ $('jobForm').addEventListener('submit', async e => {
       headers: getHeaders(),
       body: JSON.stringify(payload)
     }));
-    if (!res.ok) throw new Error((await res.text()).slice(0, 160));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
     showToast(id ? '✅ Lowongan di-update!' : '✅ Lowongan baru tayang!');
     resetJobForm(); loadJobs();
-  } catch (err) { showToast('⚠️ ' + err.message); }
+  } catch (err) { showToast('⚠️ ' + safeErr(err)); }
 });
 
 window.editJob = id => {
@@ -371,9 +425,9 @@ window.delJob = async id => {
   if (!confirm('Yakin hapus lowongan #' + id + '?')) return;
   try {
     const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/lowongan?id=eq.${id}`, { method:'DELETE', headers: getHeaders() }));
-    if (!res.ok) throw new Error((await res.text()).slice(0,160));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
     showToast('🗑 Lowongan dihapus.'); loadJobs();
-  } catch (e) { showToast('⚠️ ' + e.message); }
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 };
 
 function resetJobForm(){
@@ -387,7 +441,7 @@ let EVENTS = [];
 async function loadEvents(){
   try {
     const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=event_date.desc`, { headers: getHeaders() }));
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error('SERVER_' + res.status);
     EVENTS = await res.json();
     $('evRows').innerHTML = EVENTS.map(ev => `<tr>
       <td><b>${esc(ev.title)}</b></td>
@@ -400,7 +454,7 @@ async function loadEvents(){
         <button class="del" type="button" onclick="delEv(${ev.id})">🗑 Hapus</button>
       </div></td>
     </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px">Belum ada event.</td></tr>';
-  } catch (e) { showToast('⚠️ ' + e.message); }
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 }
 
 $('evForm').addEventListener('submit', async e => {
@@ -419,10 +473,10 @@ $('evForm').addEventListener('submit', async e => {
       headers: getHeaders(),
       body: JSON.stringify(payload)
     }));
-    if (!res.ok) throw new Error((await res.text()).slice(0, 160));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
     showToast(id ? '✅ Event di-update!' : '✅ Event baru masuk agenda!');
     resetEvForm(); loadEvents();
-  } catch (err) { showToast('⚠️ ' + err.message); }
+  } catch (err) { showToast('⚠️ ' + safeErr(err)); }
 });
 
 window.editEv = id => {
@@ -439,9 +493,9 @@ window.delEv = async id => {
   if (!confirm('Yakin hapus event #' + id + '?')) return;
   try {
     const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/events?id=eq.${id}`, { method:'DELETE', headers: getHeaders() }));
-    if (!res.ok) throw new Error((await res.text()).slice(0,160));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
     showToast('🗑 Event dihapus.'); loadEvents();
-  } catch (e) { showToast('⚠️ ' + e.message); }
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 };
 
 function resetEvForm(){
@@ -495,7 +549,7 @@ async function loadAnalytics(){
     }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px">Belum ada data.</td></tr>';
 
     showToast('📊 Analytics di-refresh!');
-  } catch (e) { showToast('⚠️ ' + e.message); }
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 }
 </script>
 </body>
