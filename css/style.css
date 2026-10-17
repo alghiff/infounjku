@@ -400,14 +400,27 @@ footer{background:var(--ink);color:var(--paper);padding:70px 0 30px;overflow:hid
   .org-marquee__track{animation:none}
 }
 
-/* ═══ LOGO SOSIAL ASLI DI FOOTER (SVG inline) ═══ */
-.foot-social{display:flex;gap:10px;flex-wrap:wrap}
-.foot-social a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:2px solid var(--ink);background:var(--paper);box-shadow:3px 3px 0 var(--ink);transition:.15s}
+/* ═══ LOGO SOSIAL ASLI DI FOOTER (SVG inline) — FIXED ═══ */
+.foot-social{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.foot-social a{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;padding:0;
+  border:2px solid var(--paper);
+  background:transparent;
+  color:var(--paper);               /* ← ICON NGIKUTIN INI (fill:currentColor) */
+  box-shadow:3px 3px 0 rgba(251,248,239,.22);
+  text-decoration:none;opacity:1;transition:.15s;
+}
 .foot-social a svg{width:19px;height:19px;display:block;fill:currentColor;transition:transform .15s ease}
-.foot-social a:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink);color:#fff}
+.foot-social a:hover{
+  color:#fff;
+  transform:translate(1px,1px);
+  box-shadow:1px 1px 0 rgba(0,0,0,.45);
+  padding-left:0;
+}
 .foot-social a:hover svg{transform:scale(1.12)}
 /* Warna brand saat hover */
-.foot-social a[aria-label="Instagram"]:hover{background:#E4405F}
-.foot-social a[aria-label="TikTok"]:hover{background:#010101}
-.foot-social a[aria-label="Telegram"]:hover{background:#229ED9}
-.foot-social a[aria-label="Email"]:hover{background:#EA4335}
+.foot-social a[aria-label="Instagram"]:hover{background:#E4405F;border-color:#E4405F}
+.foot-social a[aria-label="TikTok"]:hover{background:#010101;border-color:#69C9D0}
+.foot-social a[aria-label="Telegram"]:hover{background:#229ED9;border-color:#229ED9}
+.foot-social a[aria-label="Email"]:hover{background:#EA4335;border-color:#EA4335}
