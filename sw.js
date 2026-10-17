@@ -1,5 +1,5 @@
 /* INFOUNJKU Service Worker v3 */
-const CACHE_NAME = 'infounjku-v3';
+const CACHE_NAME = 'infounjku-v4';
 const OFFLINE_URL = '/';
 const ASSETS = [
   '/', '/index.html', '/admin.html', '/manifest.json',
