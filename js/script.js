@@ -374,25 +374,44 @@ if (agendaLimitSelect) agendaLimitSelect.addEventListener('change', e => {
 
 async function fetchIgPosts() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/ig_posts?select=*&order=created_at.desc&limit=12`, { headers: HEADERS });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/ig_posts?select=*&order=ig_timestamp.desc&limit=12`, { headers: HEADERS });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    
     if (!data.length) {
       rail.innerHTML = `<div class="empty-state rail-empty"><div class="empty-icon">📸</div><h3>Belum Ada Info</h3><p>Post IG organisasi bakal muncul otomatis di sini begitu ada yang publish.</p></div>`;
       return;
     }
+    
     rail.innerHTML = data.map(p => {
       const mc = /^m[1-6]$/.test(p.media_class || '') ? p.media_class : 'm1';
       const cap = escHtml(p.caption || '').replace(/#([\w\d_]+)/g, '<b>#$1</b>');
+      
+      // 1. Ambil URL gambar (media_url dari Supabase Storage)
+      const imgSrc = p.media_url; 
+      
+      // 2. Render Gambar. Kalau gak ada gambar, baru tampilin teks.
+      const mediaHtml = imgSrc
+        ? `<img src="${escHtml(imgSrc)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+        : `<span class="poster">${escHtml(p.poster_text || '📷')}</span>`;
+
+      const permalink = p.permalink || '#';
+      const dateLabel = p.posted_label || (p.ig_timestamp ? new Date(p.ig_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
+      // 3. Bungkus dengan <a> biar bisa diklik ke IG
       return `<article class="ig-card reveal in">
-        <div class="ig-media ${mc}"><span class="poster">${escHtml(p.poster_text)}</span><span class="auto-badge">AUTO • SYNC</span></div>
+        <a class="ig-media ${mc}" href="${escHtml(permalink)}" target="_blank" rel="noopener">
+          ${mediaHtml}
+          <span class="auto-badge">AUTO • SYNC</span>
+        </a>
         <div class="ig-body">
-          <div class="ig-user"><span class="av">IU</span>@infounjku<time>${escHtml(p.posted_label)}</time></div>
+          <div class="ig-user"><span class="av">IU</span>@infounjku<time>${escHtml(dateLabel)}</time></div>
           <p>${cap}</p>
           <div class="ig-meta"><span>❤ ${fmtNum(p.likes)}</span><span>💬 ${fmtNum(p.comments)}</span><span>↗ ${fmtNum(p.shares)}</span></div>
         </div>
       </article>`;
     }).join('');
+    
     rail.dataset.loaded = '1';
   } catch (e) {
     console.error('Gagal narik IG feed:', e);
