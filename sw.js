@@ -1,5 +1,5 @@
-/* INFOUNJKU Service Worker v6 */
-const CACHE_NAME = 'infounjku-v6'; // Naikin versi biar cache lama kehapus
+/* INFOUNJKU Service Worker v8 */
+const CACHE_NAME = 'infounjku-v8'; // Naikin versi biar cache lama kehapus
 const OFFLINE_URL = '/';
 const ASSETS = [
   '/', '/index.html', '/admin.html', '/manifest.json',

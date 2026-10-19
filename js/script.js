@@ -225,28 +225,41 @@ async function fetchLowongan() {
   const loadingGrid = document.getElementById('loadingGrid');
   try {
     if (JOBS.length === 0 && loadingGrid) loadingGrid.style.display = 'grid';
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=*&order=created_at.desc`, { headers: HEADERS });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    JOBS = data
-      .map(item => ({
-        created: item.created_at ? new Date(item.created_at).getTime() : 0,
-        id: item.id,
-        code: `OPR-${String(item.id).padStart(3, '0')}`,
-        org: item.org,
-        badge: (item.category || 'umum').toUpperCase(),
-        cat: item.category || 'umum',
-        title: item.title,
-        tags: item.tags ? String(item.tags).split(',') : ['Umum'],
-        roles: item.roles || '',
-        quota: [item.quota_filled || 0, item.quota_total || 50],
-        deadline: new Date(item.deadline).getTime(),
-        clicks: item.clicks || 0,
-        link_daftar: safeUrl(item.link_daftar),
-        src: `@${String(item.org).toLowerCase().replace(/\s/g, '')}`
-      }))
-      .filter(j => j.deadline > now());
+    
+    // Tarik data manual DAN data AI sekaligus
+    const [resManual, resAI] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=*&order=created_at.desc`, { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&kategori=eq.Open Recruitment&is_approved=eq.true`, { headers: HEADERS })
+    ]);
+    
+    const dataManual = await resManual.json();
+    const dataAI = await resAI.json();
+
+    // Map Data Manual
+    let jobsManual = dataManual.map(item => ({
+      created: item.created_at ? new Date(item.created_at).getTime() : 0,
+      id: item.id, code: `OPR-${String(item.id).padStart(3, '0')}`,
+      org: item.org, badge: (item.category || 'umum').toUpperCase(), cat: item.category || 'umum',
+      title: item.title, tags: item.tags ? String(item.tags).split(',') : ['Umum'],
+      roles: item.roles || '', quota: [item.quota_filled || 0, item.quota_total || 50],
+      deadline: new Date(item.deadline).getTime(), clicks: item.clicks || 0,
+      link_daftar: safeUrl(item.link_daftar), src: `@${String(item.org).toLowerCase().replace(/\s/g, '')}`
+    }));
+
+    // Map Data AI (Sesuaikan ke format JOBS)
+    let jobsAI = dataAI.map(item => ({
+      created: new Date().getTime(), id: item.ig_media_id, code: `AI-${String(item.ig_media_id).slice(-3)}`,
+      org: item.organisasi || 'Unknown', badge: 'AI SYNC', cat: (item.organisasi || 'umum').toLowerCase().includes('bem') ? 'bem' : 'umum',
+      title: item.judul, tags: item.tags ? String(item.tags).split(',') : ['Info AI'],
+      roles: item.role || '', quota: [0, item.kuota || 50],
+      deadline: item.deadline ? new Date(item.deadline).getTime() : Date.now() + 7*864e5, 
+      clicks: 0, link_daftar: safeUrl(item.link_pendaftaran), src: `@ig_target`
+    }));
+
+    // Gabungkan dan bersihkan yang udah lewat deadline
+    JOBS = [...jobsManual, ...jobsAI].filter(j => j.deadline > now());
     JOBS.forEach((j, i) => { j.idx = i; });
+
     computeHot();
     if (loadingGrid) loadingGrid.style.display = 'none';
     renderJobs();
@@ -318,14 +331,42 @@ function renderJobs(){
 
 async function fetchEvents() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=event_date.asc`, { headers: HEADERS });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    EVENTS = data.map(r => {
+    // Tarik data manual DAN data AI sekaligus
+    const [resManual, resAI] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=event_date.asc`, { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&kategori=eq.Agenda Acara&is_approved=eq.true`, { headers: HEADERS })
+    ]);
+
+    const dataManual = await resManual.json();
+    const dataAI = await resAI.json();
+
+    // Map Data Manual
+    let eventsManual = dataManual.map(r => {
       const [y,m,d] = String(r.event_date).split('-').map(Number);
       const [hh,mm] = (r.event_time || '09:00').split(':').map(Number);
       return { id:r.id, title:r.title, tag:r.tag || 'EVENT', location:r.location || 'TBA', time:r.event_time || '09:00', start:new Date(y, m-1, d, hh, mm) };
-    }).filter(ev => ev.start.getTime() > now());
+    });
+
+    // Map Data AI
+    let eventsAI = dataAI.map(r => {
+      // Ambil tanggal dari waktu_acara atau deadline
+      const dateStr = r.waktu_acara || r.deadline || new Date().toISOString();
+      const dateObj = new Date(dateStr);
+      return { 
+        id: r.ig_media_id, 
+        title: r.judul, 
+        tag: 'AGENDA AI', 
+        location: r.lokasi || 'TBA', 
+        time: dateObj.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}), 
+        start: dateObj 
+      };
+    });
+
+    // Gabungkan, urutkan berdasarkan tanggal terdekat, buang yang lewat
+    EVENTS = [...eventsManual, ...eventsAI]
+      .filter(ev => ev.start.getTime() > now())
+      .sort((a,b) => a.start - b.start);
+
     renderAgenda();
     renderTicker();
     updateStatEvents();
@@ -336,6 +377,7 @@ async function fetchEvents() {
     }
   }
 }
+
 function renderAgenda(){
   if (!agendaList) return;
   const box = document.getElementById('agendaLimitBox');

@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  #tab-lowongan,#tab-events,#tab-analytics{padding:0!important}
+  #tab-lowongan,#tab-events,#tab-analytics,#tab-ai-sync{padding:0!important}
   .admin-main{padding-top:26px}
   .admin-note{margin-bottom:16px;border:2px dashed var(--ink);background:var(--lime);padding:12px 16px;font-size:.82rem;font-weight:600}
   .admin-tabs{margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap}
@@ -100,6 +100,7 @@
     <div class="admin-tabs">
       <button class="chip active" data-tab="lowongan" type="button">📋 Lowongan</button>
       <button class="chip" data-tab="events" type="button">🗓 Events</button>
+      <button class="chip" data-tab="ai-sync" type="button">✨ AI Sync</button>
       <button class="chip" data-tab="analytics" type="button">📊 Analytics</button>
     </div>
 
@@ -155,6 +156,51 @@
       </div>
       <div class="admin-tablewrap">
         <table class="admin-table"><thead><tr><th>Judul</th><th>Tag</th><th>Lokasi</th><th>Tanggal</th><th>Jam</th><th>Aksi</th></tr></thead><tbody id="evRows"></tbody></table>
+      </div>
+    </section>
+
+    <section id="tab-ai-sync" hidden>
+      <div class="admin-note" style="background:#e3f77e">⚡ Data di bawah diambil otomatis oleh AI dari Instagram. Klik <b>Approve</b> agar tayang di web publik.</div>
+      
+      <div class="admin-card" style="margin-bottom: 24px;">
+        <h3 id="aiFormTitle">✎ Edit Data AI</h3>
+        <form id="aiForm" class="admin-form">
+          <input type="hidden" id="aiId">
+          <div class="row2">
+            <label>JUDUL<input id="aiJudul" required maxlength="160"></label>
+            <label>KATEGORI
+              <select id="aiKategori">
+                <option value="Open Recruitment">Open Recruitment</option>
+                <option value="Agenda Acara">Agenda Acara</option>
+                <option value="IGNORE">IGNORE</option>
+              </select>
+            </label>
+          </div>
+          <div class="row2">
+            <label>ORGANISASI<input id="aiOrganisasi"></label>
+            <label>ROLE / DIVISI<input id="aiRole"></label>
+          </div>
+          <label>🔗 LINK PENDAFTARAN (http/https aja)<input id="aiLink" type="url"></label>
+          <div class="row3">
+            <label>KUOTA<input type="number" id="aiKuota" min="0"></label>
+            <label>DEADLINE (Loker)<input type="datetime-local" id="aiDeadline"></label>
+            <label>WAKTU ACARA (Agenda)<input type="datetime-local" id="aiWaktu"></label>
+          </div>
+          <label>LOKASI<input id="aiLokasi"></label>
+          <div class="admin-actions">
+            <button class="btn btn--sm" type="submit">💾 Simpan Perubahan</button>
+            <button class="btn btn--sm btn--ghost" type="button" id="aiCancel" hidden>Batal Edit</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="admin-tablewrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Judul</th><th>Kategori</th><th>Organisasi</th><th>Role</th><th>Status</th><th>Aksi</th></tr>
+          </thead>
+          <tbody id="aiRows"></tbody>
+        </table>
       </div>
     </section>
 
@@ -348,8 +394,10 @@ document.querySelectorAll('.admin-tabs .chip').forEach(c => c.addEventListener('
   const tab = c.dataset.tab;
   $('tab-lowongan').hidden = tab !== 'lowongan';
   $('tab-events').hidden = tab !== 'events';
+  $('tab-ai-sync').hidden = tab !== 'ai-sync'; 
   $('tab-analytics').hidden = tab !== 'analytics';
   if (tab === 'analytics') loadAnalytics();
+  if (tab === 'ai-sync') loadAISync(); 
 }));
 
 /* ═══ LOWONGAN CRUD (dengan ROLE) ═══ */
@@ -551,6 +599,116 @@ async function loadAnalytics(){
     showToast('📊 Analytics di-refresh!');
   } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 }
+
+/* ═══ LOGIC TAB AI SYNC (YANG UDAH DIPERBAIKI) ═══ */
+let AI_DATA = [];
+async function loadAISync(){
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&order=created_at.desc`, { headers: getHeaders() }));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
+    AI_DATA = await res.json();
+    $('aiRows').innerHTML = AI_DATA.map(item => `<tr>
+      <td><b>${esc(item.judul)}</b></td>
+      <td><span class="pill">${esc(item.kategori)}</span></td>
+      <td>${esc(item.organisasi)}</td>
+      <td>${esc(item.role || '-')}</td>
+      <td>${item.is_approved ? '<span class="pill" style="background:#28a745;color:#fff">✅ APPROVED</span>' : '<span class="pill urgent">⏳ PENDING</span>'}</td>
+      <td>
+        <div class="act">
+          <button class="edt" type="button" onclick="editAISync('${item.ig_media_id}')">✎ Edit</button>
+          ${!item.is_approved ? `<button class="edt" type="button" onclick="approveAI('${item.ig_media_id}')" style="background:#28a745;color:#fff">✓ Approve</button>` : ''}
+          <button class="del" type="button" onclick="delAI('${item.ig_media_id}')">🗑 Hapus</button>
+        </div>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px">Belum ada data AI.</td></tr>';
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
+}
+
+window.approveAI = async id => {
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?ig_media_id=eq.${id}`, {
+      method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ is_approved: true })
+    }));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
+    showToast('✅ Data AI berhasil di-approve!'); loadAISync();
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
+};
+
+window.delAI = async id => {
+  if (!confirm('Yakin hapus data AI ini?')) return;
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?ig_media_id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
+    showToast('🗑 Data AI dihapus.'); loadAISync();
+  } catch (e) { showToast('⚠️ ' + safeErr(e)); }
+};
+
+// Fungsi Isi Form saat Tombol Edit diklik
+window.editAISync = (id) => {
+  const item = AI_DATA.find(x => x.ig_media_id === id);
+  if (!item) return;
+
+  $('aiId').value = item.ig_media_id;
+  $('aiJudul').value = item.judul || '';
+  $('aiKategori').value = item.kategori || 'Open Recruitment';
+  $('aiOrganisasi').value = item.organisasi || '';
+  $('aiRole').value = item.role || '';
+  $('aiLink').value = item.link_pendaftaran || '';
+  $('aiKuota').value = item.kuota || 0;
+  
+  if (item.deadline) $('aiDeadline').value = toLocalInput(new Date(item.deadline).getTime());
+  else $('aiDeadline').value = '';
+
+  if (item.waktu_acara) $('aiWaktu').value = toLocalInput(new Date(item.waktu_acara).getTime());
+  else $('aiWaktu').value = '';
+
+  $('aiLokasi').value = item.lokasi || '';
+
+  $('aiFormTitle').textContent = '✎ Edit Data AI — ' + id;
+  $('aiCancel').hidden = false;
+  $('aiForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+// Proses Simpan (PATCH ke Supabase)
+$('aiForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = $('aiId').value;
+  if (!id) return;
+
+  const payload = {
+    judul: $('aiJudul').value.trim(),
+    kategori: $('aiKategori').value,
+    organisasi: $('aiOrganisasi').value.trim(),
+    role: $('aiRole').value.trim() || null,
+    link_pendaftaran: $('aiLink').value.trim() || null,
+    kuota: +$('aiKuota').value || 0,
+    deadline: $('aiDeadline').value ? new Date($('aiDeadline').value).toISOString() : null,
+    waktu_acara: $('aiWaktu').value ? new Date($('aiWaktu').value).toISOString() : null,
+    lokasi: $('aiLokasi').value.trim() || null
+  };
+
+  try {
+    const res = guard(await fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?ig_media_id=eq.${id}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    }));
+    if (!res.ok) throw new Error('SERVER_' + res.status);
+    
+    showToast('✅ Data AI berhasil di-update!');
+    resetAIForm();
+    loadAISync();
+  } catch (err) { showToast('⚠️ ' + safeErr(err)); }
+});
+
+function resetAIForm() {
+  $('aiForm').reset();
+  $('aiId').value = '';
+  $('aiFormTitle').textContent = '✎ Edit Data AI';
+  $('aiCancel').hidden = true;
+}
+$('aiCancel').addEventListener('click', resetAIForm);
+
 </script>
 </body>
 </html>
