@@ -31,12 +31,40 @@
   .admin-main{padding:34px 28px 80px;max-width:1080px;margin:0 auto}
   .admin-card{background:var(--card);border:2.5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:24px 22px;margin-bottom:26px}
   .admin-card h3{font-family:var(--display);font-size:1.25rem;margin-bottom:16px;text-transform:uppercase}
-  .admin-form label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;font-weight:700;margin-bottom:10px;color:var(--ink-soft)}
-  .admin-form input,.admin-form select{display:block;width:100%;border:2px solid var(--ink);background:var(--paper);padding:10px 12px;font-family:var(--body);font-size:.9rem;outline:none;margin-top:4px}
-  .admin-form input:focus,.admin-form select:focus{box-shadow:3px 3px 0 var(--blue);background:#fff}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px}
-  .admin-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  
+  /* CSS FORM YANG UDAH DIRAPIHIN */
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--ink-soft);
+  }
+  .form-group input, .form-group select, .dropdown-trigger {
+    display: block;
+    width: 100%;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    padding: 0 12px;
+    height: 43px; /* Tinggi disamain semua */
+    font-family: var(--body);
+    font-size: .9rem;
+    outline: none;
+    margin: 0; /* Margin diserahin ke form-group */
+    box-sizing: border-box;
+  }
+  .form-group input:focus, .form-group select:focus, .dropdown-trigger:focus {
+    box-shadow: 3px 3px 0 var(--blue);
+    background: #fff;
+  }
+  
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; }
+  .admin-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  
   .admin-tablewrap{overflow-x:auto;border:2.5px solid var(--ink);box-shadow:6px 6px 0 var(--ink);background:var(--card)}
   .admin-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:720px}
   .admin-table th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-align:left;background:var(--ink);color:var(--lime);padding:12px 14px}
@@ -58,6 +86,30 @@
   .bar-h i{display:block;height:100%;background:repeating-linear-gradient(45deg,var(--blue) 0 6px,#5d76ff 6px 12px)}
   .user-info{font-family:var(--mono);font-size:11px;color:var(--ink);background:var(--paper);border:2px solid var(--ink);padding:6px 10px;box-shadow:2px 2px 0 var(--ink)}
   .lock-notice{font-family:var(--mono);font-size:10px;color:var(--red);text-align:center;margin-top:8px;letter-spacing:.05em}
+  
+  /* CUSTOM DROPDOWN */
+  .custom-dropdown { position: relative; width: 100%; }
+  .dropdown-trigger {
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    user-select: none; transition: all .15s ease;
+  }
+  .dropdown-trigger:hover { background: #fff; }
+  .dropdown-menu {
+    position: absolute; top: 100%; left: 0; right: 0; background: var(--paper);
+    border: 2px solid var(--ink); border-top: none; z-index: 10; display: none;
+    box-shadow: 4px 4px 0 var(--ink); margin-top: 2px;
+  }
+  .dropdown-menu.show { display: block; }
+  .dropdown-menu label {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    margin: 0; cursor: pointer; font-family: var(--body); font-size: .9rem;
+    font-weight: normal; color: var(--ink); text-transform: none; letter-spacing: normal;
+    border-bottom: 1px dashed rgba(0,0,0,0.2);
+  }
+  .dropdown-menu label:last-child { border-bottom: none; }
+  .dropdown-menu label:hover { background: var(--yellow); }
+  .dropdown-menu input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--blue); cursor: pointer; height: auto; }
+
   @media(max-width:640px){.row2,.row3{grid-template-columns:1fr}.admin-main{padding:24px 16px 60px}.stat-grid{grid-template-columns:1fr 1fr}}
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -81,7 +133,6 @@
     </div>
     <button class="btn" type="submit" id="loginBtn">🔓 Login →</button>
     <div id="lockNotice" class="lock-notice" hidden></div>
-    <p class="hint mono" style="margin-top:14px">💡 User dibuat di Supabase Dashboard → Authentication → Users</p>
   </form>
 </div>
 
@@ -98,10 +149,10 @@
   <main class="admin-main">
     <div class="admin-note">Pastikan lowongan dan agenda ter-update!</div>
     <div class="admin-tabs">
-      <button class="chip active" data-tab="lowongan" type="button">📋 Lowongan</button>
-      <button class="chip" data-tab="events" type="button">🗓 Events</button>
-      <button class="chip" data-tab="ai-sync" type="button">✨ AI Sync</button>
-      <button class="chip" data-tab="analytics" type="button">📊 Analytics</button>
+      <button class="chip active" data-tab="lowongan" type="button">Lowongan</button>
+      <button class="chip" data-tab="events" type="button">Acara</button>
+      <button class="chip" data-tab="ai-sync" type="button">AI Sync</button>
+      <button class="chip" data-tab="analytics" type="button">Analytics</button>
     </div>
 
     <section id="tab-lowongan">
@@ -109,22 +160,68 @@
         <h3 id="jobFormTitle">＋ Tambah Lowongan</h3>
         <form id="jobForm" class="admin-form">
           <div class="row2">
-            <label>ORGANISASI<input id="jobOrg" required maxlength="120" placeholder="BEM UNJ"></label>
-            <label>KATEGORI
-              <select id="jobCat">
-                <option value="bem">bem</option><option value="hima">hima</option><option value="ukm">ukm</option>
-                <option value="event">event</option><option value="riset">riset</option><option value="umum">umum</option>
-              </select>
-            </label>
+            <div class="form-group">
+              <label>ORGANISASI</label>
+              <input id="jobOrg" required maxlength="120" placeholder="BEM UNJ">
+            </div>
+            
+            <div class="form-group">
+              <label>KATEGORI <span style="font-weight:400; font-size:9px; text-transform:none; letter-spacing:0;">(Bisa pilih lebih dari 1)</span></label>
+              <div class="custom-dropdown">
+                <div class="dropdown-trigger" onclick="document.getElementById('jobCatMenu').classList.toggle('show')">
+                  <span id="jobCatLabel">Pilih Kategori...</span>
+                  <span>▾</span>
+                </div>
+                <div class="dropdown-menu" id="jobCatMenu">
+                  <label><input type="checkbox" class="jobCat" value="OPMAWA" onchange="updateCatLabel('jobCat', 'jobCatLabel')"> OPMAWA</label>
+                  <label><input type="checkbox" class="jobCat" value="ORMAWA" onchange="updateCatLabel('jobCat', 'jobCatLabel')"> ORMAWA</label>
+                  <label><input type="checkbox" class="jobCat" value="Non-Categorized" onchange="updateCatLabel('jobCat', 'jobCatLabel')"> Non-Categorized</label>
+                </div>
+              </div>
+            </div>
           </div>
-          <label>JUDUL LOWONGAN<input id="jobTitle" required maxlength="160" placeholder="Open Recruitment Staff Muda 2026"></label>
-          <label>TAGS (pisahkan dengan koma)<input id="jobTags" maxlength="200" placeholder="Divisi Acara, Publikasi, Dokumentasi"></label>
-          <label>👥 ROLE / DIVISI DIBUTUHKAN (pisahkan dengan koma)<input id="jobRoles" maxlength="200" placeholder="Staff Acara, Desain Grafis, Humas"></label>
-          <label>🔗 LINK PENDAFTARAN (http/https aja)<input id="jobLink" type="url" placeholder="https://forms.gle/xxx"></label>
+          
+          <div class="form-group">
+            <label>JUDUL LOWONGAN</label>
+            <input id="jobTitle" required maxlength="160" placeholder="Open Recruitment Staff Muda">
+          </div>
+          <div class="form-group">
+            <label>TAGS (Fakultas & Prodi, pisahkan dengan koma)</label>
+            <input id="jobTags" required maxlength="200" placeholder="Fakultas Teknik, Prodi Pendidikan Informatika">
+          </div>
+          <div class="form-group">
+            <label>ROLE / DIVISI DIBUTUHKAN (pisahkan dengan koma)</label>
+            <input id="jobRoles" maxlength="200" placeholder="Staff Acara, Desain Grafis, Humas">
+          </div>
+          <div class="form-group">
+            <label>LINK PENDAFTARAN (http/https)</label>
+            <input id="jobLink" type="url" placeholder="https://forms.gle/xxx">
+          </div>
+          
+          <div class="row2">
+            <div class="form-group">
+              <label>KONTAK WA (Opsional)</label>
+              <input id="jobWa" placeholder="0812xxx">
+            </div>
+            <div class="form-group">
+              <label>KONTAK IG (Opsional)</label>
+              <input id="jobIg" placeholder="@infounjku">
+            </div>
+          </div>
+
           <div class="row3">
-            <label>TERISI<input type="number" id="jobFilled" min="0" value="0"></label>
-            <label>KUOTA<input type="number" id="jobTotal" min="1" value="50"></label>
-            <label>DEADLINE<input type="datetime-local" id="jobDeadline" required></label>
+            <div class="form-group">
+              <label>TERISI</label>
+              <input type="number" id="jobFilled" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label>KUOTA</label>
+              <input type="number" id="jobTotal" min="1" value="50">
+            </div>
+            <div class="form-group">
+              <label>DEADLINE</label>
+              <input type="datetime-local" id="jobDeadline" required>
+            </div>
           </div>
           <div class="admin-actions">
             <button class="btn btn--sm" type="submit">💾 Simpan</button>
@@ -139,15 +236,42 @@
 
     <section id="tab-events" hidden>
       <div class="admin-card">
-        <h3 id="evFormTitle">＋ Tambah Event</h3>
+        <h3 id="evFormTitle">＋ Tambah ACARA</h3>
         <form id="evForm" class="admin-form">
-          <label>JUDUL EVENT<input id="evTitle" required maxlength="160" placeholder="Sosialisasi Open Recruitment"></label>
-          <div class="row3">
-            <label>TAG<input id="evTag" maxlength="40" placeholder="EVENT / WEBINAR / WORKSHOP"></label>
-            <label>TANGGAL<input type="date" id="evDate" required></label>
-            <label>JAM<input type="time" id="evTime" value="09:00" required></label>
+          <div class="form-group">
+            <label>JUDUL ACARA</label>
+            <input id="evTitle" required maxlength="160" placeholder="Sosialisasi Open Recruitment">
           </div>
-          <label>LOKASI<input id="evLoc" maxlength="160" placeholder="Aula Kampus / Zoom"></label>
+          <div class="row3">
+            <div class="form-group">
+              <label>TAGS</label>
+              <input id="evTag" maxlength="40" placeholder="EVENT / WEBINAR / WORKSHOP">
+            </div>
+            <div class="form-group">
+              <label>TANGGAL</label>
+              <input type="date" id="evDate" required>
+            </div>
+            <div class="form-group">
+              <label>JAM</label>
+              <input type="time" id="evTime" value="09:00" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>LOKASI</label>
+            <input id="evLoc" maxlength="160" placeholder="Aula Kampus / Zoom">
+          </div>
+
+          <div class="row2">
+            <div class="form-group">
+              <label>KONTAK WA (Opsional)</label>
+              <input id="evWa" placeholder="0812xxx">
+            </div>
+            <div class="form-group">
+              <label>KONTAK IG (Opsional)</label>
+              <input id="evIg" placeholder="@infounjku">
+            </div>
+          </div>
+
           <div class="admin-actions">
             <button class="btn btn--sm" type="submit">💾 Simpan</button>
             <button class="btn btn--sm btn--ghost" type="button" id="evCancel" hidden>Batal Edit</button>
@@ -160,33 +284,80 @@
     </section>
 
     <section id="tab-ai-sync" hidden>
-      <div class="admin-note" style="background:#e3f77e">⚡ Data di bawah diambil otomatis oleh AI dari Instagram. Klik <b>Approve</b> agar tayang di web publik.</div>
-      
       <div class="admin-card" style="margin-bottom: 24px;">
         <h3 id="aiFormTitle">✎ Edit Data AI</h3>
         <form id="aiForm" class="admin-form">
           <input type="hidden" id="aiId">
           <div class="row2">
-            <label>JUDUL<input id="aiJudul" required maxlength="160"></label>
-            <label>KATEGORI
-              <select id="aiKategori">
-                <option value="Open Recruitment">Open Recruitment</option>
-                <option value="Agenda Acara">Agenda Acara</option>
-                <option value="IGNORE">IGNORE</option>
-              </select>
-            </label>
+            <div class="form-group">
+              <label>JUDUL</label>
+              <input id="aiJudul" required maxlength="160">
+            </div>
+            
+            <div class="form-group">
+              <label>KATEGORI <span style="font-weight:400; font-size:9px; text-transform:none; letter-spacing:0;">(Bisa pilih lebih dari 1)</span></label>
+              <div class="custom-dropdown">
+                <div class="dropdown-trigger" onclick="document.getElementById('aiCatMenu').classList.toggle('show')">
+                  <span id="aiCatLabel">Pilih Kategori...</span>
+                  <span>▾</span>
+                </div>
+                <div class="dropdown-menu" id="aiCatMenu">
+                  <label><input type="checkbox" class="aiCat" value="OPMAWA" onchange="updateCatLabel('aiCat', 'aiCatLabel')"> OPMAWA</label>
+                  <label><input type="checkbox" class="aiCat" value="ORMAWA" onchange="updateCatLabel('aiCat', 'aiCatLabel')"> ORMAWA</label>
+                  <label><input type="checkbox" class="aiCat" value="Non-Categorized" onchange="updateCatLabel('aiCat', 'aiCatLabel')"> Non-Categorized</label>
+                </div>
+              </div>
+            </div>
           </div>
+          
           <div class="row2">
-            <label>ORGANISASI<input id="aiOrganisasi"></label>
-            <label>ROLE / DIVISI<input id="aiRole"></label>
+            <div class="form-group">
+              <label>ORGANISASI</label>
+              <input id="aiOrganisasi">
+            </div>
+            <div class="form-group">
+              <label>ROLE / DIVISI</label>
+              <input id="aiRole">
+            </div>
           </div>
-          <label>🔗 LINK PENDAFTARAN (http/https aja)<input id="aiLink" type="url"></label>
+          <div class="form-group">
+            <label>TAGS (Fakultas & Prodi, pisahkan dengan koma)</label>
+            <input id="aiTags" required maxlength="200" placeholder="Fakultas Teknik, Prodi Informatika">
+          </div>
+          <div class="form-group">
+            <label>LINK PENDAFTARAN (http/https)</label>
+            <input id="aiLink" type="url">
+          </div>
+
+          <div class="row2">
+            <div class="form-group">
+              <label>KONTAK WA (Opsional)</label>
+              <input id="aiWa" placeholder="0812xxx">
+            </div>
+            <div class="form-group">
+              <label>KONTAK IG (Opsional)</label>
+              <input id="aiIg" placeholder="@infounjku">
+            </div>
+          </div>
+
           <div class="row3">
-            <label>KUOTA<input type="number" id="aiKuota" min="0"></label>
-            <label>DEADLINE (Loker)<input type="datetime-local" id="aiDeadline"></label>
-            <label>WAKTU ACARA (Agenda)<input type="datetime-local" id="aiWaktu"></label>
+            <div class="form-group">
+              <label>KUOTA</label>
+              <input type="number" id="aiKuota" min="0">
+            </div>
+            <div class="form-group">
+              <label>DEADLINE</label>
+              <input type="datetime-local" id="aiDeadline">
+            </div>
+            <div class="form-group">
+              <label>WAKTU ACARA</label>
+              <input type="datetime-local" id="aiWaktu">
+            </div>
           </div>
-          <label>LOKASI<input id="aiLokasi"></label>
+          <div class="form-group">
+            <label>LOKASI</label>
+            <input id="aiLokasi">
+          </div>
           <div class="admin-actions">
             <button class="btn btn--sm" type="submit">💾 Simpan Perubahan</button>
             <button class="btn btn--sm btn--ghost" type="button" id="aiCancel" hidden>Batal Edit</button>
@@ -249,6 +420,19 @@ function showToast(msg){
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
 }
+
+// Fungsi buat nampilin teks pilihan ke kotak
+function updateCatLabel(className, labelId) {
+  const selected = Array.from(document.querySelectorAll('.' + className + ':checked')).map(cb => cb.value);
+  document.getElementById(labelId).textContent = selected.length > 0 ? selected.join(', ') : 'Pilih Kategori...';
+}
+
+// Nutup dropdown kalau user klik di luar kotak
+window.addEventListener('click', function(e) {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
+  }
+});
 
 /* ═══ GUARD 401 ═══ */
 function guard(res){
@@ -400,7 +584,7 @@ document.querySelectorAll('.admin-tabs .chip').forEach(c => c.addEventListener('
   if (tab === 'ai-sync') loadAISync(); 
 }));
 
-/* ═══ LOWONGAN CRUD (dengan ROLE) ═══ */
+/* ═══ LOWONGAN CRUD ═══ */
 let JOBS = [];
 async function loadJobs(){
   try {
@@ -433,13 +617,18 @@ $('jobForm').addEventListener('submit', async e => {
   const linkRaw = $('jobLink').value.trim();
   const linkOk = linkRaw === '' || /^https?:\/\//i.test(linkRaw);
   if (!linkOk) { showToast('⚠️ Link pendaftaran harus diawali http:// atau https://'); return; }
+  
+  const selectedCats = Array.from(document.querySelectorAll('.jobCat:checked')).map(cb => cb.value).join(', ');
+
   const payload = {
     org: $('jobOrg').value.trim(),
-    category: $('jobCat').value,
+    category: selectedCats || 'Non-Categorized',
     title: $('jobTitle').value.trim(),
     tags: $('jobTags').value.trim(),
     roles: $('jobRoles').value.trim() || null,
     link_daftar: linkRaw || null,
+    contact_wa: $('jobWa').value.trim() || null,
+    contact_ig: $('jobIg').value.trim() || null,
     quota_filled: +$('jobFilled').value || 0,
     quota_total: +$('jobTotal').value || 1,
     deadline: new Date($('jobDeadline').value).toISOString()
@@ -460,10 +649,17 @@ $('jobForm').addEventListener('submit', async e => {
 window.editJob = id => {
   const j = JOBS.find(x => x.id === id); if (!j) return;
   $('jobForm').dataset.editId = id;
-  $('jobOrg').value = j.org; $('jobCat').value = j.category; $('jobTitle').value = j.title;
+  $('jobOrg').value = j.org; $('jobTitle').value = j.title;
   $('jobTags').value = j.tags || ''; $('jobRoles').value = j.roles || ''; $('jobLink').value = j.link_daftar || '';
+  $('jobWa').value = j.contact_wa || ''; $('jobIg').value = j.contact_ig || '';
   $('jobFilled').value = j.quota_filled || 0; $('jobTotal').value = j.quota_total || 50;
   $('jobDeadline').value = toLocalInput(new Date(j.deadline).getTime());
+  
+  document.querySelectorAll('.jobCat').forEach(cb => {
+    cb.checked = j.category ? j.category.includes(cb.value) : false;
+  });
+  updateCatLabel('jobCat', 'jobCatLabel');
+
   $('jobFormTitle').textContent = '✎ Edit Lowongan #' + id;
   $('jobCancel').hidden = false;
   $('jobForm').scrollIntoView({ behavior:'smooth', block:'center' });
@@ -480,6 +676,8 @@ window.delJob = async id => {
 
 function resetJobForm(){
   $('jobForm').reset(); delete $('jobForm').dataset.editId;
+  document.querySelectorAll('.jobCat').forEach(cb => cb.checked = false);
+  updateCatLabel('jobCat', 'jobCatLabel');
   $('jobFormTitle').textContent = '＋ Tambah Lowongan'; $('jobCancel').hidden = true;
 }
 $('jobCancel').addEventListener('click', resetJobForm);
@@ -512,7 +710,9 @@ $('evForm').addEventListener('submit', async e => {
     tag: $('evTag').value.trim() || 'EVENT',
     event_date: $('evDate').value,
     event_time: $('evTime').value,
-    location: $('evLoc').value.trim() || 'TBA'
+    location: $('evLoc').value.trim() || 'TBA',
+    contact_wa: $('evWa').value.trim() || null,
+    contact_ig: $('evIg').value.trim() || null,
   };
   const id = $('evForm').dataset.editId;
   try {
@@ -532,6 +732,7 @@ window.editEv = id => {
   $('evForm').dataset.editId = id;
   $('evTitle').value = ev.title; $('evTag').value = ev.tag || ''; $('evDate').value = ev.event_date;
   $('evTime').value = ev.event_time || '09:00'; $('evLoc').value = ev.location || '';
+  $('evWa').value = ev.contact_wa || ''; $('evIg').value = ev.contact_ig || '';
   $('evFormTitle').textContent = '✎ Edit Event #' + id;
   $('evCancel').hidden = false;
   $('evForm').scrollIntoView({ behavior:'smooth', block:'center' });
@@ -600,7 +801,7 @@ async function loadAnalytics(){
   } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 }
 
-/* ═══ LOGIC TAB AI SYNC (YANG UDAH DIPERBAIKI) ═══ */
+/* ═══ LOGIC TAB AI SYNC ═══ */
 let AI_DATA = [];
 async function loadAISync(){
   try {
@@ -643,19 +844,25 @@ window.delAI = async id => {
   } catch (e) { showToast('⚠️ ' + safeErr(e)); }
 };
 
-// Fungsi Isi Form saat Tombol Edit diklik
 window.editAISync = (id) => {
   const item = AI_DATA.find(x => x.ig_media_id === id);
   if (!item) return;
 
   $('aiId').value = item.ig_media_id;
   $('aiJudul').value = item.judul || '';
-  $('aiKategori').value = item.kategori || 'Open Recruitment';
   $('aiOrganisasi').value = item.organisasi || '';
   $('aiRole').value = item.role || '';
+  $('aiTags').value = item.tags || '';
   $('aiLink').value = item.link_pendaftaran || '';
+  $('aiWa').value = item.contact_wa || '';
+  $('aiIg').value = item.contact_ig || '';
   $('aiKuota').value = item.kuota || 0;
   
+  document.querySelectorAll('.aiCat').forEach(cb => {
+    cb.checked = item.kategori ? item.kategori.includes(cb.value) : false;
+  });
+  updateCatLabel('aiCat', 'aiCatLabel');
+
   if (item.deadline) $('aiDeadline').value = toLocalInput(new Date(item.deadline).getTime());
   else $('aiDeadline').value = '';
 
@@ -669,18 +876,22 @@ window.editAISync = (id) => {
   $('aiForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
-// Proses Simpan (PATCH ke Supabase)
 $('aiForm').addEventListener('submit', async e => {
   e.preventDefault();
   const id = $('aiId').value;
   if (!id) return;
 
+  const selectedAiCats = Array.from(document.querySelectorAll('.aiCat:checked')).map(cb => cb.value).join(', ');
+
   const payload = {
     judul: $('aiJudul').value.trim(),
-    kategori: $('aiKategori').value,
+    kategori: selectedAiCats || 'Non-Categorized',
     organisasi: $('aiOrganisasi').value.trim(),
     role: $('aiRole').value.trim() || null,
+    tags: $('aiTags').value.trim(),
     link_pendaftaran: $('aiLink').value.trim() || null,
+    contact_wa: $('aiWa').value.trim() || null,
+    contact_ig: $('aiIg').value.trim() || null,
     kuota: +$('aiKuota').value || 0,
     deadline: $('aiDeadline').value ? new Date($('aiDeadline').value).toISOString() : null,
     waktu_acara: $('aiWaktu').value ? new Date($('aiWaktu').value).toISOString() : null,
@@ -704,6 +915,8 @@ $('aiForm').addEventListener('submit', async e => {
 function resetAIForm() {
   $('aiForm').reset();
   $('aiId').value = '';
+  document.querySelectorAll('.aiCat').forEach(cb => cb.checked = false);
+  updateCatLabel('aiCat', 'aiCatLabel');
   $('aiFormTitle').textContent = '✎ Edit Data AI';
   $('aiCancel').hidden = true;
 }

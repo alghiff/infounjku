@@ -1,12 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   INFOUNJKU — PRODUCTION SCRIPT v12
-   + share pakai logo SVG asli aplikasi
-   + hapus preview link di share sheet
-   + tombol "Reminder" & "Share" (tanpa H-1 / Bebas)
-   + modal detail compact di HP
-   + banner install PWA bottom-sheet rapi (floating, di luar form)
-   + bintang hero inline (posisi konsisten)
-   + anti info-leak di toast durasi custom
+   INFOUNJKU — PRODUCTION SCRIPT v20 (CLEAN UI)
    ══════════════════════════════════════════════════════════ */
 
 const SUPABASE_URL = 'https://ntleoqyavsdhfmamuewe.supabase.co';
@@ -71,7 +64,6 @@ window.addEventListener('hashchange', () => handleHashRoute());
   .share-grid .ic{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 auto}
   .share-grid .ic svg{width:26px;height:26px;display:block}
   .share-grid button:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink);background:var(--yellow)}
-  /* BANNER INSTALL PWA — BOTTOM SHEET RAPI HP & DESKTOP (floating, di luar form) */
   #installBanner{position:fixed;left:12px;right:12px;bottom:12px;margin:0 auto;max-width:520px;z-index:130;background:var(--card);border:2.5px solid var(--ink);box-shadow:8px 8px 0 var(--blue);padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;transform:translateY(160%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.7,.2,1),visibility .35s}
   #installBanner.show{transform:translateY(0);visibility:visible}
   #installBanner .ib__ic{font-size:1.6rem;flex-shrink:0}
@@ -158,9 +150,27 @@ function jobScore(j){
 }
 function pickTopJob(){
   if (!JOBS.length) return null;
-  const pool = JOBS.filter(j => jobScore(j) >= 0);
-  const list = pool.length ? pool : JOBS;
-  return [...list].sort((a,b) => jobScore(b) - jobScore(a))[0];
+  
+  const minatUser = localStorage.getItem('iu_filter') || 'all';
+  const recentJobs = JSON.parse(localStorage.getItem('iu_recent_jobs') || '[]');
+  
+  let pool = JOBS.filter(j => jobScore(j) >= 0);
+  if (!pool.length) pool = JOBS;
+
+  if (minatUser !== 'all') {
+    const filteredByMinat = pool.filter(j => j.cat && j.cat.toLowerCase().includes(minatUser.toLowerCase()));
+    if (filteredByMinat.length > 0) pool = filteredByMinat;
+  }
+
+  if (recentJobs.length > 0) {
+    const lastSeen = JOBS.find(j => j.id === recentJobs[0]);
+    if (lastSeen) {
+      const similarJobs = pool.filter(j => j.cat === lastSeen.cat && j.id !== lastSeen.id);
+      if (similarJobs.length > 0) pool = similarJobs;
+    }
+  }
+
+  return [...pool].sort((a,b) => jobScore(b) - jobScore(a))[0];
 }
 
 function updateStatJobs(){
@@ -226,7 +236,6 @@ async function fetchLowongan() {
   try {
     if (JOBS.length === 0 && loadingGrid) loadingGrid.style.display = 'grid';
     
-    // Tarik data manual DAN data AI sekaligus
     const [resManual, resAI] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=*&order=created_at.desc`, { headers: HEADERS }),
       fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&kategori=eq.Open Recruitment&is_approved=eq.true`, { headers: HEADERS })
@@ -235,7 +244,6 @@ async function fetchLowongan() {
     const dataManual = await resManual.json();
     const dataAI = await resAI.json();
 
-    // Map Data Manual
     let jobsManual = dataManual.map(item => ({
       created: item.created_at ? new Date(item.created_at).getTime() : 0,
       id: item.id, code: `OPR-${String(item.id).padStart(3, '0')}`,
@@ -243,20 +251,24 @@ async function fetchLowongan() {
       title: item.title, tags: item.tags ? String(item.tags).split(',') : ['Umum'],
       roles: item.roles || '', quota: [item.quota_filled || 0, item.quota_total || 50],
       deadline: new Date(item.deadline).getTime(), clicks: item.clicks || 0,
-      link_daftar: safeUrl(item.link_daftar), src: `@${String(item.org).toLowerCase().replace(/\s/g, '')}`
+      link_daftar: safeUrl(item.link_daftar),
+      contact_wa: item.contact_wa || null,
+      contact_ig: item.contact_ig || null,
+      src: `@${String(item.org).toLowerCase().replace(/\s/g, '')}`
     }));
 
-    // Map Data AI (Sesuaikan ke format JOBS)
     let jobsAI = dataAI.map(item => ({
       created: new Date().getTime(), id: item.ig_media_id, code: `AI-${String(item.ig_media_id).slice(-3)}`,
-      org: item.organisasi || 'Unknown', badge: 'AI SYNC', cat: (item.organisasi || 'umum').toLowerCase().includes('bem') ? 'bem' : 'umum',
+      org: item.organisasi || 'Unknown', badge: 'AI SYNC', cat: item.kategori || 'Non-Categorized',
       title: item.judul, tags: item.tags ? String(item.tags).split(',') : ['Info AI'],
       roles: item.role || '', quota: [0, item.kuota || 50],
       deadline: item.deadline ? new Date(item.deadline).getTime() : Date.now() + 7*864e5, 
-      clicks: 0, link_daftar: safeUrl(item.link_pendaftaran), src: `@ig_target`
+      clicks: 0, link_daftar: safeUrl(item.link_pendaftaran),
+      contact_wa: item.contact_wa || null,
+      contact_ig: item.contact_ig || null,
+      src: `@ig_target`
     }));
 
-    // Gabungkan dan bersihkan yang udah lewat deadline
     JOBS = [...jobsManual, ...jobsAI].filter(j => j.deadline > now());
     JOBS.forEach((j, i) => { j.idx = i; });
 
@@ -298,15 +310,38 @@ function renderJobs(){
   }
   if (emptyState) emptyState.style.display = 'none';
   if (jobsGrid) jobsGrid.style.display = 'grid';
+  
   grid.innerHTML = sortedJobs().map((j,i) => {
+    const registeredJobs = JSON.parse(localStorage.getItem('iu_registered') || '[]');
+    const recentJobs = JSON.parse(localStorage.getItem('iu_recent_jobs') || '[]');
+    const isRegistered = registeredJobs.includes(j.id);
+    const isRecent = recentJobs.includes(j.id);
+
+    let userBadge = '';
+    if (!isRegistered && isRecent) {
+      userBadge = `<span class="stamp" style="background:#e3f77e;color:#000;">👀 BARU DILIHAT</span>`;
+    }
+
     const st = statusOf(j), pct = Math.min(100, Math.round(quotaPct(j)*100));
-    const stamp = st==='full'    ? '<span class="stamp stamp--closed">KUOTA PENUH</span>'
-                : st==='urgent'  ? '<span class="stamp stamp--urgent">SEGERA TUTUP</span>'
+    const stamp = st==='full' ? '<span class="stamp stamp--closed">KUOTA PENUH</span>'
+                : st==='urgent' ? '<span class="stamp stamp--urgent">SEGERA TUTUP</span>'
                 : '<span class="stamp stamp--open">DIBUKA</span>';
     const hot = j.hot ? '<span class="stamp stamp--hot">🔥 HOT</span>' : '';
     const disabled = (st==='full') ? 'disabled' : '';
+
+    let actionBtn = '';
+    if (isRegistered) {
+      actionBtn = `<button class="btn btn--sm" disabled style="background:#28a745;color:#fff;opacity:1;border-color:#28a745;">✅ Udah Didaftar</button>`;
+    } else if (j.link_daftar && j.link_daftar !== '') {
+      actionBtn = `<button class="btn btn--sm js-apply" data-id="${j.id}" ${disabled}>${st==='full'?'Kuota Penuh':'Lamar'}</button>`;
+    } else {
+      actionBtn = `<button class="btn btn--sm js-detail" data-id="${j.id}" style="background:var(--yellow);color:var(--ink);">Cek Cara Daftar</button>`;
+    }
+
     return `<article class="job reveal in ${st==='full'?'job--closed':''}" data-id="${j.id}" data-cat="${escHtml(j.cat)}" data-deadline="${j.deadline}" data-search="${escHtml((j.title+' '+j.org+' '+j.tags.join(' ')+' '+(j.roles||'')).toLowerCase())}" style="transition-delay:${i*0.04}s">
-      <div class="job__top"><span class="job__code mono">${j.code} • via ${escHtml(j.src)}</span><span class="job__stamps">${hot}${stamp}</span></div>
+      <div class="job__top" style="justify-content: flex-end;">
+        <span class="job__stamps">${userBadge}${hot}${stamp}</span>
+      </div>
       <div class="job__org"><span class="mono-badge">${escHtml(j.badge)}</span>${escHtml(j.org)}</div>
       <h3>${escHtml(j.title)}</h3>
       <div class="job__tags">${j.tags.map(t=>`<span>${escHtml(t)}</span>`).join('')}</div>
@@ -319,50 +354,36 @@ function renderJobs(){
       </div>
       <div class="job__deadline ${st==='urgent'?'hot':''}">⏳ <b class="cd" data-deadline="${j.deadline}">${fmtCd(j.deadline-now())}</b></div>
       <div class="job__actions">
-        <button class="btn btn--sm js-apply" data-id="${j.id}" ${disabled}>${st==='full'?'Kuota Penuh':'Lamar'}</button>
+        ${actionBtn}
         <button class="btn btn--sm btn--ghost js-detail" data-id="${j.id}">Detail</button>
-        <button class="btn btn--sm btn--ghost js-remind" data-id="${j.id}" title="Ingatkan di kalender">📅</button>
-        <button class="btn btn--sm btn--ghost js-share" data-id="${j.id}" title="Share">↗ Share</button>
       </div>
     </article>`;
   }).join('');
+  
   applyFilter();
 }
 
 async function fetchEvents() {
   try {
-    // Tarik data manual DAN data AI sekaligus
     const [resManual, resAI] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=event_date.asc`, { headers: HEADERS }),
       fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&kategori=eq.Agenda Acara&is_approved=eq.true`, { headers: HEADERS })
     ]);
-
     const dataManual = await resManual.json();
     const dataAI = await resAI.json();
 
-    // Map Data Manual
     let eventsManual = dataManual.map(r => {
       const [y,m,d] = String(r.event_date).split('-').map(Number);
       const [hh,mm] = (r.event_time || '09:00').split(':').map(Number);
-      return { id:r.id, title:r.title, tag:r.tag || 'EVENT', location:r.location || 'TBA', time:r.event_time || '09:00', start:new Date(y, m-1, d, hh, mm) };
+      return { id:r.id, title:r.title, tag:r.tag || 'EVENT', location:r.location || 'TBA', time:r.event_time || '09:00', start:new Date(y, m-1, d, hh, mm), contact_wa: r.contact_wa, contact_ig: r.contact_ig };
     });
 
-    // Map Data AI
     let eventsAI = dataAI.map(r => {
-      // Ambil tanggal dari waktu_acara atau deadline
       const dateStr = r.waktu_acara || r.deadline || new Date().toISOString();
       const dateObj = new Date(dateStr);
-      return { 
-        id: r.ig_media_id, 
-        title: r.judul, 
-        tag: 'AGENDA AI', 
-        location: r.lokasi || 'TBA', 
-        time: dateObj.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}), 
-        start: dateObj 
-      };
+      return { id: r.ig_media_id, title: r.judul, tag: 'AGENDA AI', location: r.lokasi || 'TBA', time: dateObj.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}), start: dateObj, contact_wa: r.contact_wa, contact_ig: r.contact_ig };
     });
 
-    // Gabungkan, urutkan berdasarkan tanggal terdekat, buang yang lewat
     EVENTS = [...eventsManual, ...eventsAI]
       .filter(ev => ev.start.getTime() > now())
       .sort((a,b) => a.start - b.start);
@@ -427,12 +448,10 @@ async function fetchIgPosts() {
     
     rail.innerHTML = data.map(p => {
       const mc = /^m[1-6]$/.test(p.media_class || '') ? p.media_class : 'm1';
-      const cap = escHtml(p.caption || '').replace(/#([\w\d_]+)/g, '<b>#$1</b>');
+      const cap = escHtml(p.caption || '').replace(/(^|\s)#([\w\d_]+)/g, '$1<b>#$2</b>');
       
-      // 1. Ambil URL gambar (media_url dari Supabase Storage)
       const imgSrc = p.media_url; 
       
-      // 2. Render Gambar. Kalau gak ada gambar, baru tampilin teks.
       const mediaHtml = imgSrc
         ? `<img src="${escHtml(imgSrc)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
         : `<span class="poster">${escHtml(p.poster_text || '📷')}</span>`;
@@ -440,7 +459,6 @@ async function fetchIgPosts() {
       const permalink = p.permalink || '#';
       const dateLabel = p.posted_label || (p.ig_timestamp ? new Date(p.ig_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
-      // 3. Bungkus dengan <a> biar bisa diklik ke IG
       return `<article class="ig-card reveal in">
         <a class="ig-media ${mc}" href="${escHtml(permalink)}" target="_blank" rel="noopener">
           ${mediaHtml}
@@ -482,7 +500,7 @@ function updateHeroCard(){
   }
   const pct = Math.min(100, Math.round(quotaPct(top)*100));
   const st = statusOf(top);
-  const label = top.hot ? '🔥 HOT & SEGERA TUTUP' : (st==='urgent' ? '🔥 URGENT — SEGERA TUTUP' : '✨ REKOMENDASI UNTUK LU');
+  const label = top.hot ? '🔥 HOT & SEGERA TUTUP' : (st==='urgent' ? '🔥 URGENT — SEGERA TUTUP' : (localStorage.getItem('iu_filter') !== 'all' ? '✨ REKOMENDASI BUAT KAMU' : '✨ REKOMENDASI UNTUK LU'));
   heroCard.innerHTML = `
     <span class="tape"></span>
     <span class="urgent-tag">${label}</span>
@@ -494,10 +512,9 @@ function updateHeroCard(){
     <div class="meta"><span>${top.quota[0]}/${top.quota[1]} pendaftar</span><span>via ${escHtml(top.src)}</span></div>
     <div class="pinned__actions">
       <button class="btn js-apply" data-id="${top.id}">Gas Daftar →</button>
-      <button class="btn btn--ghost js-remind" data-id="${top.id}" title="Ingatkan di kalender">📅</button>
-      <button class="btn btn--ghost js-share" data-id="${top.id}" title="Share">↗</button>
     </div>`;
 }
+
 function updateHeroMinis(){
   const a = document.getElementById('miniA');
   const b = document.getElementById('miniB');
@@ -565,8 +582,9 @@ async function bumpClicks(id){
   } catch(e){ return false; }
 }
 
-let curFilter = 'all', curSearch = '', curSort = 'newest', curDeadline = 'any';
-let pendFilter = 'all', pendDeadline = 'any', pendSort = 'newest';
+let curFilter = localStorage.getItem('iu_filter') || 'all';
+let curSearch = '', curSort = 'newest', curDeadline = 'any';
+let pendFilter = curFilter, pendDeadline = 'any', pendSort = 'newest';
 const DL_RANGE = { '3d': 3, 'week': 7, 'month': 30 };
 
 function sortedJobs(){
@@ -583,15 +601,10 @@ function updateCount(){
   const visible = [...document.querySelectorAll('.job')].filter(j => !j.classList.contains('hide') && !j.classList.contains('limit-hide')).length;
   const cl = document.getElementById('countLine');
   if (cl) cl.textContent = `// menampilkan ${visible} dari ${JOBS.length} lowongan`;
-  const li = document.getElementById('limitInfo');
-  if (li) {
-    const matched = [...document.querySelectorAll('.job')].filter(j => !j.classList.contains('hide')).length;
-    li.textContent = `// ${visible} dari ${matched} lowongan cocok ditampilkan`;
-  }
 }
 function applyFilter(){
   document.querySelectorAll('.job').forEach(el => {
-    const okCat = curFilter === 'all' || el.dataset.cat === curFilter;
+    const okCat = curFilter === 'all' || (el.dataset.cat && el.dataset.cat.toLowerCase().includes(curFilter.toLowerCase()));
     const okSearch = el.dataset.search.includes(curSearch);
     let okDl = true;
     if (curDeadline !== 'any') {
@@ -621,7 +634,7 @@ if (limitSelect) limitSelect.addEventListener('change', e => {
 });
 function previewCount(){
   return JOBS.filter(j => {
-    const okCat = pendFilter === 'all' || j.cat === pendFilter;
+    const okCat = pendFilter === 'all' || (j.cat && j.cat.toLowerCase().includes(pendFilter.toLowerCase()));
     const okSearch = (j.title + ' ' + j.org + ' ' + j.tags.join(' ') + ' ' + (j.roles||'')).toLowerCase().includes(curSearch);
     let okDl = true;
     if (pendDeadline !== 'any') {
@@ -632,8 +645,7 @@ function previewCount(){
   }).length;
 }
 function updatePreview(){
-  const fc = document.getElementById('filterCount');
-  if (fc) fc.textContent = `${previewCount()} lowongan cocok — tekan "Selesai ✓" untuk terapkan`;
+  // DIHAPUS: const fc = document.getElementById('filterCount'); ...
 }
 function syncChipUI(){
   document.querySelectorAll('#chipsRow .chip').forEach(c => c.classList.toggle('active', c.dataset.filter === pendFilter));
@@ -651,6 +663,9 @@ function updateBadge(){
 function commitFilters(){
   const sortChanged = pendSort !== curSort;
   curFilter = pendFilter; curDeadline = pendDeadline; curSort = pendSort;
+  
+  localStorage.setItem('iu_filter', curFilter);
+
   if (sortChanged) renderJobs(); else applyFilter();
   updateBadge();
   setFilterOpen(false);
@@ -726,6 +741,13 @@ document.addEventListener('click', e => { if (e.target.closest('.modal__close'))
 
 function openDetail(j, skipBump){
   if (!skipBump) bumpClicks(j.id);
+  
+  let recent = JSON.parse(localStorage.getItem('iu_recent_jobs') || '[]');
+  recent = recent.filter(id => id !== j.id);
+  recent.unshift(j.id);
+  if (recent.length > 5) recent.pop();
+  localStorage.setItem('iu_recent_jobs', JSON.stringify(recent));
+
   const newHash = '#job-' + j.id;
   if (location.hash !== newHash) history.replaceState(null, '', newHash);
   const st = statusOf(j), pct = Math.min(100, Math.round(quotaPct(j)*100));
@@ -733,9 +755,18 @@ function openDetail(j, skipBump){
               : st==='urgent' ? '<span class="stamp stamp--urgent">SEGERA TUTUP</span>'
               : '<span class="stamp stamp--open">DIBUKA</span>';
   const hot = j.hot ? '<span class="stamp stamp--hot">🔥 HOT</span>' : '';
+
   const linkBtn = j.link_daftar
     ? `<a class="btn" href="${escHtml(j.link_daftar)}" target="_blank" rel="noopener noreferrer">Gas Daftar →</a>`
-    : `<button class="btn" disabled>Link belum tersedia</button>`;
+    : `<button class="btn" disabled>Link Belum Tersedia</button>`;
+
+  const waSvg = `<svg viewBox="0 0 24 24" fill="#25D366" width="18" height="18" style="margin-right:6px;"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.7.63.71.22 1.36.19 1.87.11.57-.08 1.76-.72 2-1.41.25-.7.25-1.29.18-1.41-.07-.13-.27-.2-.57-.35m-5.42 7.4h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 0 1 6.99 2.9 9.83 9.83 0 0 1 2.9 7 9.9 9.9 0 0 1-9.9 9.87m8.42-18.3A11.8 11.8 0 0 0 12.05 0C5.5 0 .16 5.33.16 11.89c0 2.1.55 4.14 1.59 5.94L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.44h.01c6.55 0 11.89-5.33 11.89-11.89 0-3.18-1.24-6.16-3.49-8.42"/></svg>`;
+  
+  const igSvg = `<svg viewBox="0 0 24 24" width="18" height="18" style="margin-right:6px;"><defs><linearGradient id="igGrad" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433" /><stop offset="25%" stop-color="#e6683c" /><stop offset="50%" stop-color="#dc2743" /><stop offset="75%" stop-color="#cc2366" /><stop offset="100%" stop-color="#bc1888" /></linearGradient></defs><path fill="url(#igGrad)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>`;
+
+  const contactBtnWa = j.contact_wa ? `<a class="btn btn--ghost" href="https://wa.me/${j.contact_wa.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-flex; align-items:center; gap:8px;">${waSvg} WA</a>` : '';
+  const contactBtnIg = j.contact_ig ? `<a class="btn btn--ghost" href="https://ig.me/m/${j.contact_ig.replace('@', '')}" target="_blank" style="display:inline-flex; align-items:center; gap:8px;">${igSvg} IG</a>` : '';
+
   detailModal.querySelector('.modal__body').innerHTML = `
     <span class="mono-kick" style="color:var(--blue)">📄 DETAIL LOWONGAN • ${j.code}</span>
     <h2>${escHtml(j.title)}</h2>
@@ -762,12 +793,14 @@ function openDetail(j, skipBump){
       <ol>
         <li>Follow <b>@infounjku</b> biar gak ketinggalan update detik terakhir.</li>
         <li>Siapin CV + portofolio paling daging versi lu.</li>
-        <li>${j.link_daftar ? 'Klik <b>Gas Daftar</b> — form resmi dibuka di tab baru.' : 'Hubungi kontak organisasi buat link pendaftaran.'}</li>
+        <li>${j.link_daftar ? 'Klik <b>Gas Daftar</b> — form resmi dibuka di tab baru.' : 'Link belum tersedia. Silakan cek postingan Instagram asli atau hubungi kontak organisasi.'}</li>
         <li>Pasang <b>reminder H-1</b> di kalender biar deadline gak nyeremin diam-diam.</li>
       </ol>
     </div>
     <div class="dt__actions">
       ${linkBtn}
+      ${contactBtnWa}
+      ${contactBtnIg}
       <button class="btn btn--ghost js-remind" data-id="${j.id}">📅 Reminder</button>
       <button class="btn btn--ghost js-share" data-id="${j.id}">↗ Share</button>
     </div>`;
@@ -854,9 +887,18 @@ document.addEventListener('click', e => {
   if (apply && !apply.disabled) {
     const j = JOBS.find(x => x.id == apply.dataset.id);
     if (j && j.link_daftar) {
+      
+      let registered = JSON.parse(localStorage.getItem('iu_registered') || '[]');
+      if (!registered.includes(j.id)) {
+        registered.push(j.id);
+        localStorage.setItem('iu_registered', JSON.stringify(registered));
+      }
+      
       bumpClicks(+apply.dataset.id);
       window.open(j.link_daftar, '_blank', 'noopener');
-      showToast('↗ Form pendaftaran dibuka di tab baru!');
+      showToast('↗ Form pendaftaran dibuka. Semangat bro!');
+      
+      renderJobs(); 
     } else {
       showToast('⚠️ Link pendaftaran belum tersedia. Buka detail buat info kontak.');
     }
@@ -886,7 +928,6 @@ if (collabForm) {
   collabForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // 1. CEK RECAPTCHA DULU
     if (typeof grecaptcha !== 'undefined') {
       const captchaResponse = grecaptcha.getResponse();
       if (captchaResponse.length === 0) {
@@ -923,7 +964,6 @@ if (collabForm) {
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Gagal kirim');
       }
-      // -----------------------
 
       showToast('✅ Proposal kolaborasi berhasil dikirim! Admin akan segera review.');
       collabForm.reset();
@@ -1023,7 +1063,6 @@ setInterval(refreshAll, SYNC_INTERVAL);
 
 // ==========================================
 // LOGIC PWA UNIVERSAL (CHROME, EDGE, BRAVE, SAFARI)
-// floating bottom-sheet, TERPISAH dari form
 // ==========================================
 let deferredPrompt;
 const installBanner = document.getElementById('installBanner');
@@ -1035,8 +1074,8 @@ const isStandalone = () => window.matchMedia('(display-mode: standalone)').match
 
 function showInstallBanner(){
   if (!installBanner || !deferredPrompt) return;
-  if (isStandalone()) return;                            // udah terinstall → skip
-  if (sessionStorage.getItem(IU_INSTALL_DISMISS)) return; // pernah pencet "Nanti" sesi ini
+  if (isStandalone()) return;
+  if (sessionStorage.getItem(IU_INSTALL_DISMISS)) return;
   installBanner.classList.add('show');
   installBanner.setAttribute('aria-hidden', 'false');
 }
@@ -1046,7 +1085,6 @@ function hideInstallBanner(){
   installBanner.setAttribute('aria-hidden', 'true');
 }
 
-// Chromium (Chrome/Edge/Brave/Opera) — HP & Desktop
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -1076,7 +1114,6 @@ if (installNo) installNo.addEventListener('click', () => {
   hideInstallBanner();
 });
 
-// iOS Safari (iPhone/iPad)
 const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 if (isIos && !isStandalone()) {
   setTimeout(() => {
