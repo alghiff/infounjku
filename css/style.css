@@ -108,12 +108,10 @@ header{position:sticky;top:0;z-index:50;background:var(--paper);border-bottom:2.
 .hero__stats span{display:flex;flex-direction:column;gap:2px}
 .hero__stats i{font-style:normal;color:var(--ink-soft)}
 .hero__visual{position:relative;min-height:440px;max-width:100%}
-.mega-star{position:absolute;top:-30px;right:-20px;font-size:9rem;color:transparent;-webkit-text-stroke:2px rgba(23,21,18,.18);animation:spin 26s linear infinite;pointer-events:none;line-height:1;will-change:transform}
 
 .pinned{background:var(--card);border:2.5px solid var(--ink);box-shadow:var(--shadow);padding:30px 28px;position:relative;transition:transform .3s}
 .pinned--main{transform:rotate(-2deg);z-index:2}
 .pinned--main:hover{transform:rotate(-1deg) translateY(-4px)}
-.tape{position:absolute;top:-14px;left:50%;transform:translateX(-50%) rotate(-3deg);width:110px;height:26px;background:rgba(205,239,75,.85);border:1.5px solid rgba(23,21,18,.25)}
 .urgent-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--red);font-weight:700;display:flex;align-items:center;gap:8px}
 .pinned h3{font-family:var(--display);font-size:1.6rem;font-weight:800;line-height:1.1;margin:10px 0 4px}
 .pinned .org{font-size:.85rem;color:var(--ink-soft);font-weight:600}
@@ -127,6 +125,7 @@ header{position:sticky;top:0;z-index:50;background:var(--paper);border-bottom:2.
 .pinned--mini.b{left:-14px;bottom:-24px;transform:rotate(-3deg);background:var(--lime);animation:bob 5s ease-in-out infinite reverse}
 .sticker{position:absolute;left:-26px;top:36%;width:92px;height:92px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:.95rem;text-align:center;line-height:1.1;border:2.5px solid var(--ink);box-shadow:4px 4px 0 var(--ink);transform:rotate(-12deg);z-index:4;animation:bob 3.5s ease-in-out infinite;will-change:transform}
 .pinned--main .big-cd,.pinned--main .cd-label{margin-left:50px}
+.pinned__close{display:none} /* Sembunyiin X di desktop */
 .pinned__actions{display:flex;gap:10px;margin-top:18px}
 .pinned__actions .btn{margin-top:0;width:auto}
 .pinned__actions .js-apply{flex:1;justify-content:center}
@@ -352,7 +351,6 @@ footer{background:var(--ink);color:var(--paper);padding:70px 0 30px;overflow:hid
   .pinned--mini.b{left:0;bottom:-20px}
   .sticker{width:76px;height:76px;font-size:.8rem;left:-10px}
   .pinned--main .big-cd,.pinned--main .cd-label{margin-left:54px}
-  .mega-star{font-size:6rem;top:-16px;right:-8px}
   .agenda-item{grid-template-columns:70px 1fr;gap:14px;padding:20px 10px}
   .agenda-date b{font-size:1.35rem}
   .about-text{padding-left:16px;font-size:.95rem}
@@ -424,3 +422,134 @@ footer{background:var(--ink);color:var(--paper);padding:70px 0 30px;overflow:hid
 .foot-social a[aria-label="TikTok"]:hover{background:#010101;border-color:#69C9D0}
 .foot-social a[aria-label="Telegram"]:hover{background:#229ED9;border-color:#229ED9}
 .foot-social a[aria-label="Email"]:hover{background:#EA4335;border-color:#EA4335}
+
+@media (max-width: 860px) {
+  
+  /* ══ 1. FIX LAYOUT HERO & TEKS ══ */
+  .hero {
+    padding: 30px 0 20px !important;
+    overflow-x: hidden !important;
+  }
+  .hero .wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+    padding: 0 24px !important; 
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+  .hero .wrap > div:first-child {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .hero .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .hero h1 {
+    font-size: 2rem !important;
+    line-height: 1.15 !important;
+    margin-bottom: 12px !important;
+    word-break: break-word !important;
+  }
+  .hero .flip {
+    display: inline !important; 
+    padding: 2px 8px !important;
+    word-break: break-word !important;
+  }
+  .hero p.lead {
+    margin: 10px 0 20px !important;
+    font-size: 0.95rem !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+  }
+
+  /* ══ 2. FIX WADAH KOSONG ══ */
+  .hero__visual {
+    display: contents !important; 
+  }
+  .sticker, .pinned--mini { display: none !important; }
+
+  /* ══ 3. POP-UP IKLAN ══ */
+  .pinned--main {
+    display: block !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) scale(0.9) !important;
+    width: 90vw !important;
+    max-width: 340px !important;
+    z-index: 999999 !important; 
+    padding: 20px 18px !important;
+    box-shadow: 0 0 0 100vmax rgba(0,0,0,0.7) !important; 
+    border: 3px solid var(--ink) !important;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: auto !important;
+    margin: 0 !important;
+  }
+
+  .pinned--main.show-ad {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+  }
+
+  .pinned__close {
+    display: block !important;
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    background: var(--red);
+    color: #fff;
+    border: 2.5px solid var(--ink);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    z-index: 10;
+    padding: 0;
+    line-height: 1;
+  }
+  .pinned__close:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+  .pinned--main .urgent-tag { font-size: 11px; margin-bottom: 6px; }
+  .pinned--main h3 { font-size: 1.3rem; margin: 6px 0; line-height: 1.2; }
+  .pinned--main .org { font-size: 0.85rem; }
+  .pinned--main .big-cd { font-size: 1.2rem; margin: 10px 0 6px !important; padding: 8px 12px; margin-left: 0 !important; }
+  .pinned--main .cd-label { font-size: 9px; margin-left: 0 !important; margin-bottom: 10px; }
+  .pinned--main .bar { margin: 6px 0; height: 8px; }
+  .pinned--main .meta { font-size: 9px; }
+  .pinned--main .pinned__actions { margin-top: 12px; gap: 6px; }
+  .pinned--main .pinned__actions .btn { padding: 8px 10px; font-size: 0.8rem; flex: 1; justify-content: center; }
+
+  /* ══ 4. LOWONGAN JADI HORIZONTAL SCROLL (PAKE ID) ══ */
+  /* Gw pake #jobsGrid biar cuma nargetin wadah asli, bukan skeleton */
+  #jobsGrid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 16px !important;
+    padding-bottom: 20px !important;
+    margin: 0 !important; 
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  #jobsGrid::-webkit-scrollbar { display: none !important; }
+  
+  #jobsGrid .job {
+    flex: 0 0 85% !important; 
+    max-width: 320px !important;
+    scroll-snap-align: start !important;
+    margin-bottom: 0 !important;
+  }
+}

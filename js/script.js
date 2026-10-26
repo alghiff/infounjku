@@ -491,8 +491,13 @@ function updateHeroCard(){
   const heroCard = document.querySelector('.pinned--main');
   if (!heroCard) return;
   const top = pickTopJob();
+  
+  // Cek apakah user pake HP
+  const isMobile = window.innerWidth <= 860; 
+
   if (!top) {
     heroCard.innerHTML = `
+      <button class="pinned__close" aria-label="Tutup Iklan">✕</button>
       <span class="tape"></span>
       <span class="urgent-tag">✨ BELUM ADA LOWONGAN AKTIF</span>
       <h3>Lowongan baru segera hadir</h3>
@@ -501,13 +506,18 @@ function updateHeroCard(){
       <span class="cd-label">HARI : JAM : MENIT : DETIK</span>
       <div class="bar"><i style="width:0%"></i></div>
       <div class="meta"><span>-/- pendaftar</span><span>via @infounjku</span></div>
-      <div class="pinned__actions"><button class="btn" disabled>Gas Daftar →</button></div>`;
+      <div class="pinned__actions">
+        <button class="btn" disabled>Gas Daftar →</button>
+      </div>`;
     return;
   }
+
   const pct = Math.min(100, Math.round(quotaPct(top)*100));
   const st = statusOf(top);
   const label = top.hot ? '🔥 HOT & SEGERA TUTUP' : (st==='urgent' ? '🔥 URGENT — SEGERA TUTUP' : (localStorage.getItem('iu_filter') !== 'all' ? '✨ REKOMENDASI BUAT KAMU' : '✨ REKOMENDASI UNTUK LU'));
+  
   heroCard.innerHTML = `
+    <button class="pinned__close" aria-label="Tutup Iklan">✕</button>
     <span class="tape"></span>
     <span class="urgent-tag">${label}</span>
     <h3>${escHtml(top.title)}</h3>
@@ -517,7 +527,10 @@ function updateHeroCard(){
     <div class="bar"><i style="width:${pct}%"></i></div>
     <div class="meta"><span>${top.quota[0]}/${top.quota[1]} pendaftar</span><span>via ${escHtml(top.src)}</span></div>
     <div class="pinned__actions">
-      <button class="btn js-apply" data-id="${top.id}">Gas Daftar →</button>
+      ${isMobile 
+        ? `<button class="btn js-detail" data-id="${top.id}">Detail</button>` 
+        : `<button class="btn js-apply" data-id="${top.id}">Gas Daftar →</button>`
+      }
     </div>`;
 }
 
@@ -898,9 +911,18 @@ document.addEventListener('click', e => {
   const detail = e.target.closest('.js-detail');
   if (detail) {
     const j = JOBS.find(x => x.id == detail.dataset.id);
-    if (j) openDetail(j, false);
+    if (j) {
+      // HAPUS FLOATING AD PAS KLIK DETAIL
+      const ad = document.querySelector('.pinned--main');
+      if (ad) {
+        ad.classList.remove('show-ad');
+        sessionStorage.setItem('ad_closed', 'true'); // Biar gak muncul terus
+      }
+      openDetail(j, false);
+    }
     return;
   }
+  
   const apply = e.target.closest('.js-apply');
   if (apply && !apply.disabled) {
     const j = JOBS.find(x => x.id == apply.dataset.id);
@@ -1078,6 +1100,43 @@ async function refreshAll(){
 }
 refreshAll().then(() => setTimeout(handleHashRoute, 600));
 setInterval(refreshAll, SYNC_INTERVAL);
+
+// ==========================================
+// LOGIC POP-UP IKLAN (MOBILE ONLY)
+// ==========================================
+console.log("Nyoba nge-load pop-up iklan...");
+
+// Munculin pop-up setelah 2 detik
+setTimeout(() => {
+  console.log("Waktu 2 detik tercapai. Lebar layar:", window.innerWidth);
+  
+  if (window.innerWidth <= 860) {
+    const pinnedAd = document.querySelector('.pinned--main');
+    
+    if (pinnedAd) {
+      // HAPUS sessionStorage dulu buat mastiin muncul
+      if (sessionStorage.getItem('ad_closed')) {
+        console.log("Iklan pernah ditutup, ngapus history...");
+        sessionStorage.removeItem('ad_closed'); 
+      }
+      
+      pinnedAd.classList.add('show-ad');
+      console.log("Class 'show-ad' berhasil ditambahkan!");
+    } else {
+      console.log("Error: Elemen .pinned--main gak ketemu di HTML!");
+    }
+  }
+}, 2000);
+
+// Event Delegation: Nangkep klik tombol close
+document.body.addEventListener('click', (e) => {
+  if (e.target.closest('.pinned__close')) {
+    console.log("Tombol X diklik, nutup iklan...");
+    const ad = document.querySelector('.pinned--main');
+    if (ad) ad.classList.remove('show-ad');
+    sessionStorage.setItem('ad_closed', 'true'); 
+  }
+});
 
 // ==========================================
 // LOGIC PWA UNIVERSAL (CHROME, EDGE, BRAVE, SAFARI)
