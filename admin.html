@@ -43,20 +43,26 @@
     margin-bottom: 6px;
     color: var(--ink-soft);
   }
-  .form-group input, .form-group select, .dropdown-trigger {
+  .form-group input, .form-group select, .form-group textarea, .dropdown-trigger {
     display: block;
     width: 100%;
     border: 2px solid var(--ink);
     background: var(--paper);
-    padding: 0 12px;
-    height: 43px; /* Tinggi disamain semua */
+    padding: 10px 12px;
     font-family: var(--body);
     font-size: .9rem;
     outline: none;
-    margin: 0; /* Margin diserahin ke form-group */
+    margin: 0;
     box-sizing: border-box;
   }
-  .form-group input:focus, .form-group select:focus, .dropdown-trigger:focus {
+  .form-group input, .form-group select, .dropdown-trigger {
+    height: 43px;
+  }
+  .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .dropdown-trigger:focus {
     box-shadow: 3px 3px 0 var(--blue);
     background: #fff;
   }
@@ -149,10 +155,10 @@
   <main class="admin-main">
     <div class="admin-note">Pastikan lowongan dan agenda ter-update!</div>
     <div class="admin-tabs">
-      <button class="chip active" data-tab="lowongan" type="button">Lowongan</button>
-      <button class="chip" data-tab="events" type="button">Acara</button>
-      <button class="chip" data-tab="ai-sync" type="button">AI Sync</button>
-      <button class="chip" data-tab="analytics" type="button">Analytics</button>
+      <button class="chip active" data-tab="lowongan" type="button">📋 Lowongan</button>
+      <button class="chip" data-tab="events" type="button">🗓 Events</button>
+      <button class="chip" data-tab="ai-sync" type="button">✨ AI Sync</button>
+      <button class="chip" data-tab="analytics" type="button">📊 Analytics</button>
     </div>
 
     <section id="tab-lowongan">
@@ -196,6 +202,11 @@
           <div class="form-group">
             <label>LINK PENDAFTARAN (http/https)</label>
             <input id="jobLink" type="url" placeholder="https://forms.gle/xxx">
+          </div>
+          
+          <div class="form-group">
+            <label>SYARAT PENDAFTARAN (Pisahkan dengan Enter)</label>
+            <textarea id="jobReq" placeholder="1. Mahasiswa aktif UNJ&#10;2. Berkomitmen&#10;3. ..."></textarea>
           </div>
           
           <div class="row2">
@@ -327,6 +338,11 @@
           <div class="form-group">
             <label>LINK PENDAFTARAN (http/https)</label>
             <input id="aiLink" type="url">
+          </div>
+
+          <div class="form-group">
+            <label>SYARAT PENDAFTARAN (Pisahkan dengan Enter)</label>
+            <textarea id="aiReq" placeholder="1. Syarat pertama...&#10;2. Syarat kedua..."></textarea>
           </div>
 
           <div class="row2">
@@ -627,6 +643,7 @@ $('jobForm').addEventListener('submit', async e => {
     tags: $('jobTags').value.trim(),
     roles: $('jobRoles').value.trim() || null,
     link_daftar: linkRaw || null,
+    requirements: $('jobReq').value.trim() || null,
     contact_wa: $('jobWa').value.trim() || null,
     contact_ig: $('jobIg').value.trim() || null,
     quota_filled: +$('jobFilled').value || 0,
@@ -651,6 +668,7 @@ window.editJob = id => {
   $('jobForm').dataset.editId = id;
   $('jobOrg').value = j.org; $('jobTitle').value = j.title;
   $('jobTags').value = j.tags || ''; $('jobRoles').value = j.roles || ''; $('jobLink').value = j.link_daftar || '';
+  $('jobReq').value = j.requirements || '';
   $('jobWa').value = j.contact_wa || ''; $('jobIg').value = j.contact_ig || '';
   $('jobFilled').value = j.quota_filled || 0; $('jobTotal').value = j.quota_total || 50;
   $('jobDeadline').value = toLocalInput(new Date(j.deadline).getTime());
@@ -854,6 +872,7 @@ window.editAISync = (id) => {
   $('aiRole').value = item.role || '';
   $('aiTags').value = item.tags || '';
   $('aiLink').value = item.link_pendaftaran || '';
+  $('aiReq').value = item.requirements || '';
   $('aiWa').value = item.contact_wa || '';
   $('aiIg').value = item.contact_ig || '';
   $('aiKuota').value = item.kuota || 0;
@@ -890,6 +909,7 @@ $('aiForm').addEventListener('submit', async e => {
     role: $('aiRole').value.trim() || null,
     tags: $('aiTags').value.trim(),
     link_pendaftaran: $('aiLink').value.trim() || null,
+    requirements: $('aiReq').value.trim() || null,
     contact_wa: $('aiWa').value.trim() || null,
     contact_ig: $('aiIg').value.trim() || null,
     kuota: +$('aiKuota').value || 0,

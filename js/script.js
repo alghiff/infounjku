@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   INFOUNJKU — PRODUCTION SCRIPT v20 (CLEAN UI)
+   INFOUNJKU — PRODUCTION SCRIPT v21 (SYARAT & KALENDER)
    ══════════════════════════════════════════════════════════ */
 
 const SUPABASE_URL = 'https://ntleoqyavsdhfmamuewe.supabase.co';
@@ -238,7 +238,7 @@ async function fetchLowongan() {
     
     const [resManual, resAI] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/lowongan?select=*&order=created_at.desc`, { headers: HEADERS }),
-      fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&kategori=eq.Open Recruitment&is_approved=eq.true`, { headers: HEADERS })
+      fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&is_approved=eq.true`, { headers: HEADERS })
     ]);
     
     const dataManual = await resManual.json();
@@ -252,22 +252,26 @@ async function fetchLowongan() {
       roles: item.roles || '', quota: [item.quota_filled || 0, item.quota_total || 50],
       deadline: new Date(item.deadline).getTime(), clicks: item.clicks || 0,
       link_daftar: safeUrl(item.link_daftar),
+      requirements: item.requirements || null,
       contact_wa: item.contact_wa || null,
       contact_ig: item.contact_ig || null,
       src: `@${String(item.org).toLowerCase().replace(/\s/g, '')}`
     }));
 
-    let jobsAI = dataAI.map(item => ({
-      created: new Date().getTime(), id: item.ig_media_id, code: `AI-${String(item.ig_media_id).slice(-3)}`,
-      org: item.organisasi || 'Unknown', badge: 'AI SYNC', cat: item.kategori || 'Non-Categorized',
-      title: item.judul, tags: item.tags ? String(item.tags).split(',') : ['Info AI'],
-      roles: item.role || '', quota: [0, item.kuota || 50],
-      deadline: item.deadline ? new Date(item.deadline).getTime() : Date.now() + 7*864e5, 
-      clicks: 0, link_daftar: safeUrl(item.link_pendaftaran),
-      contact_wa: item.contact_wa || null,
-      contact_ig: item.contact_ig || null,
-      src: `@ig_target`
-    }));
+    let jobsAI = dataAI
+      .filter(item => !item.waktu_acara)
+      .map(item => ({
+        created: new Date().getTime(), id: item.ig_media_id, code: `AI-${String(item.ig_media_id).slice(-3)}`,
+        org: item.organisasi || 'Unknown', badge: 'AI SYNC', cat: item.kategori || 'Non-Categorized',
+        title: item.judul, tags: item.tags ? String(item.tags).split(',') : ['Info AI'],
+        roles: item.role || '', quota: [0, item.kuota || 50],
+        deadline: item.deadline ? new Date(item.deadline).getTime() : Date.now() + 7*864e5, 
+        clicks: 0, link_daftar: safeUrl(item.link_pendaftaran),
+        requirements: item.requirements || null,
+        contact_wa: item.contact_wa || null,
+        contact_ig: item.contact_ig || null,
+        src: `@ig_target`
+      }));
 
     JOBS = [...jobsManual, ...jobsAI].filter(j => j.deadline > now());
     JOBS.forEach((j, i) => { j.idx = i; });
@@ -367,7 +371,7 @@ async function fetchEvents() {
   try {
     const [resManual, resAI] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/events?select=*&order=event_date.asc`, { headers: HEADERS }),
-      fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&kategori=eq.Agenda Acara&is_approved=eq.true`, { headers: HEADERS })
+      fetch(`${SUPABASE_URL}/rest/v1/ig_ai_scraped?select=*&is_approved=eq.true`, { headers: HEADERS })
     ]);
     const dataManual = await resManual.json();
     const dataAI = await resAI.json();
@@ -378,11 +382,13 @@ async function fetchEvents() {
       return { id:r.id, title:r.title, tag:r.tag || 'EVENT', location:r.location || 'TBA', time:r.event_time || '09:00', start:new Date(y, m-1, d, hh, mm), contact_wa: r.contact_wa, contact_ig: r.contact_ig };
     });
 
-    let eventsAI = dataAI.map(r => {
-      const dateStr = r.waktu_acara || r.deadline || new Date().toISOString();
-      const dateObj = new Date(dateStr);
-      return { id: r.ig_media_id, title: r.judul, tag: 'AGENDA AI', location: r.lokasi || 'TBA', time: dateObj.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}), start: dateObj, contact_wa: r.contact_wa, contact_ig: r.contact_ig };
-    });
+    let eventsAI = dataAI
+      .filter(r => r.waktu_acara)
+      .map(r => {
+        const dateStr = r.waktu_acara || r.deadline || new Date().toISOString();
+        const dateObj = new Date(dateStr);
+        return { id: r.ig_media_id, title: r.judul, tag: 'AGENDA AI', location: r.lokasi || 'TBA', time: dateObj.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'}), start: dateObj, contact_wa: r.contact_wa, contact_ig: r.contact_ig };
+      });
 
     EVENTS = [...eventsManual, ...eventsAI]
       .filter(ev => ev.start.getTime() > now())
@@ -767,6 +773,19 @@ function openDetail(j, skipBump){
   const contactBtnWa = j.contact_wa ? `<a class="btn btn--ghost" href="https://wa.me/${j.contact_wa.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-flex; align-items:center; gap:8px;">${waSvg} WA</a>` : '';
   const contactBtnIg = j.contact_ig ? `<a class="btn btn--ghost" href="https://ig.me/m/${j.contact_ig.replace('@', '')}" target="_blank" style="display:inline-flex; align-items:center; gap:8px;">${igSvg} IG</a>` : '';
 
+  // Tentukan syarat (Pake dari DB atau Default)
+  const defaultReqs = [
+    "Mahasiswa aktif Universitas Negeri Jakarta.",
+    "Mampu bekerja sama dalam tim dan berkomitmen tinggi.",
+    "Bersedia mengikuti seluruh rangkaian kegiatan.",
+    "Memiliki kemauan untuk belajar hal baru."
+  ];
+  const reqsArray = j.requirements 
+    ? j.requirements.split('\n').filter(r => r.trim() !== '') 
+    : defaultReqs;
+  
+  const reqsHtml = reqsArray.map(r => `<li>${escHtml(r)}</li>`).join('');
+
   detailModal.querySelector('.modal__body').innerHTML = `
     <span class="mono-kick" style="color:var(--blue)">📄 DETAIL LOWONGAN • ${j.code}</span>
     <h2>${escHtml(j.title)}</h2>
@@ -788,20 +807,19 @@ function openDetail(j, skipBump){
       <div><span>DIPOSTING</span><b>${j.created ? new Date(j.created).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) : '—'}</b></div>
     </div>
     <div class="job__tags" style="margin-bottom:4px">${j.tags.map(t=>`<span>${escHtml(t)}</span>`).join('')}</div>
+    
     <div class="dt__steps">
-      <span class="mono" style="font-size:10px;letter-spacing:.16em;font-weight:700">CARA DAFTAR VERSI INFOUNJKU ✦</span>
+      <span class="mono" style="font-size:10px;letter-spacing:.16em;font-weight:700">SYARAT PENDAFTARAN ✦</span>
       <ol>
-        <li>Follow <b>@infounjku</b> biar gak ketinggalan update detik terakhir.</li>
-        <li>Siapin CV + portofolio paling daging versi lu.</li>
-        <li>${j.link_daftar ? 'Klik <b>Gas Daftar</b> — form resmi dibuka di tab baru.' : 'Link belum tersedia. Silakan cek postingan Instagram asli atau hubungi kontak organisasi.'}</li>
-        <li>Pasang <b>reminder H-1</b> di kalender biar deadline gak nyeremin diam-diam.</li>
+        ${reqsHtml}
       </ol>
     </div>
+    
     <div class="dt__actions">
       ${linkBtn}
       ${contactBtnWa}
       ${contactBtnIg}
-      <button class="btn btn--ghost js-remind" data-id="${j.id}">📅 Reminder</button>
+      <button class="btn btn--ghost js-remind" data-id="${j.id}">📅 Catat Deadline</button>
       <button class="btn btn--ghost js-share" data-id="${j.id}">↗ Share</button>
     </div>`;
   openModal(detailModal);
